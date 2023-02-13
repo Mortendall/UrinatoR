@@ -11,6 +11,7 @@ library(here)
 library(openxlsx)
 library(data.table)
 library(lubridate)
+library(plotly)
 
 options(shiny.maxRequestSize = 500*1024^2)
 cores <- parallel::detectCores()
