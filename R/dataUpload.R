@@ -125,8 +125,10 @@ upload <- function(id, data, parentSession){
                                                         50,
                                                         mean,
                                                         fill = NA,
-                                                        partial = T)
-          )
+                                                        partial = T),
+                        DeltaRollingMean = RollingMeanAcc - lag(RollingMeanAcc)
+          ) |>
+          dplyr::rename(Individual= ID)
 
         #function to add group based on ID
         testdataLong$Group <- NA
@@ -134,7 +136,7 @@ upload <- function(id, data, parentSession){
                                                ~ dplyr::mutate(
                                                  testdataLong,
                                                  Group = dplyr::case_when(
-                                                   stringr::str_detect(ID, .x) == TRUE ~ .x,
+                                                   stringr::str_detect(Individual, .x) == TRUE ~ .x,
                                                    TRUE ~ as.character(Group)
                                                  )
                                                )
@@ -143,6 +145,20 @@ upload <- function(id, data, parentSession){
           dplyr::arrange(TimeElapsed)
 
         data$longData <- testdataLong
+
+        testdataGroup <- testdataLong |>
+          dplyr::group_by(Group, TimeElapsed) |>
+          dplyr::summarise(meanRawdata = mean(Rawdata),
+                           sdRawdata = sd(Rawdata),
+                           meanAccumulated = mean(AccumulatedValue),
+                           sdAccumulated = sd(AccumulatedValue),
+                           meanIncremental = mean(DeltaRollingMean),
+                           sdIncremental= sd(DeltaRollingMean),
+                           meanRolling = mean(RollingMeanAcc),
+                           sdRolling = sd(RollingMeanAcc))
+        data$groupeddata <- testdataGroup
+
+
 
         #switch to next tab
         shiny::updateTabsetPanel(session = parentSession,
