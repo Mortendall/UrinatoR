@@ -8,6 +8,7 @@ summaryFigUI <- function(id){
                                        choices = c("Individual", "Group"),
                                        selected = "Group")),
       shiny::column(width = 6,
+                    shiny::h5("Press button to draw plots"),
                     shiny::actionButton(inputId = ns("updateplot"),
                                         label = "Draw Plots")
       ))

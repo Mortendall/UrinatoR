@@ -12,6 +12,7 @@ library(openxlsx)
 library(data.table)
 library(lubridate)
 library(plotly)
+library(bslib)
 
 options(shiny.maxRequestSize = 500*1024^2)
 cores <- parallel::detectCores()
@@ -26,6 +27,8 @@ on.exit({
 dataSheet <- shiny::reactiveValues()
 
 ui <- shiny::fluidPage(
+  theme = bslib::bs_theme(version = 5,
+                          bootswatch = "united"),
   shiny::titlePanel("UrinatoR: a tool for visualizing mouse urine data from DVC"),
   shiny::tabsetPanel(type = "tabs",
                      id = "inTabset",

@@ -21,7 +21,6 @@ upload <- function(id, data, parentSession){
        ns <- shiny::NS(id)
 
        #Register user input. Check they have submitted a csv file.
-       #If CSV file is submitted, display data in table below.
        #Press 'process data' to proceed
 
        shiny::observeEvent(input$fileUpload,{
@@ -59,21 +58,24 @@ upload <- function(id, data, parentSession){
                               label = "Process data",
                               icon = shiny::icon("arrow-right")
                               ),
-                    rhandsontable::rHandsontableOutput(outputId = ns("groupOverview")),
-                    rhandsontable::rHandsontableOutput(outputId = ns("dataScreen"))
+                    shiny::textOutput(outputId = ns("groups"))
+                    #,
+                    #rhandsontable::rHandsontableOutput(outputId = ns("dataScreen"))
           )
       })
+      output$groups <- shiny::renderText({
+        paste("The following groups have been detected in the dataset: ",
+              paste(data$groups, collapse = ", "))
+      })
+#original version included table of data, but this did not contribute much.
+      #I have therefore commented it out from being rendered
       output$dataScreen <- rhandsontable::renderRHandsontable({
         req(data$trimmedData)
         rhandsontable::rhandsontable(data$trimmedData)
       })
 
-      #Group overview
-      output$groupScreen <- rhandsontable::renderRHandsontable({
-        req(data$groups)
-        rhandsontable::rhandsontable(data$groups)
-      })
-
+      #This code controls what happens when data process button is selected.
+      #Data is processed and user is sent to next page
       shiny::observeEvent(input$ProcessData,{
         #prepare data in long format for plotting
 
