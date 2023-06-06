@@ -37,7 +37,10 @@ ui <- shiny::fluidPage(
                                      value = "uploadPage"),
                      shiny::tabPanel(title = "Summary figure",
                                      summaryFigUI("summary"),
-                                     value = "summaryFig")
+                                     value = "summaryFig"),
+                     shiny::tabPanel(title = "Circadian plot",
+                                     circadianUI("circadian"),
+                                     value = "circadian")
                      )
 )
 
@@ -45,6 +48,7 @@ server <-function(input, output, session){
   parentSession <- session
   upload("upload",dataSheet, parentSession)
   summary("summary", dataSheet, parentSession)
+  circadian("circadian",dataSheet,parentSession)
 }
 
 shinyApp(ui = ui, server = server)

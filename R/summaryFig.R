@@ -6,18 +6,24 @@ summaryFigUI <- function(id){
                     shiny::selectInput(inputId = ns("grouptoggle"),
                                        label = "Plot by Group or Individual?",
                                        choices = c("Individual", "Group"),
-                                       selected = "Group")),
+                                       selected = "Group"),
+                    shiny::selectInput(inputId = ns("plottoggle"),
+                                       label = "Select plot to display",
+                                       choices = c("Cumulative Urination Plot",
+                                                   "Incremental Plot",
+                                                   "Raw Data Plot"))),
       shiny::column(width = 6,
-                    shiny::h5("Press button to draw plots"),
+                    shiny::h6("Press button to draw selected plot"),
                     shiny::actionButton(inputId = ns("updateplot"),
-                                        label = "Draw Plots")
+                                        label = "Draw!")
       ))
     ,
     shiny::fluidRow(
       shiny::column(width = 12,
-                    plotly::plotlyOutput(outputId = ns("rawdataPlot")),
-                    plotly::plotlyOutput(outputId = ns("summaryPlot")),
-                    plotly::plotlyOutput(outputId = ns("incrementalPlot"))
+                    shiny::uiOutput(outputId = ns("selectedplot"))
+                    # plotly::plotlyOutput(outputId = ns("rawdataPlot")),
+                    # plotly::plotlyOutput(outputId = ns("summaryPlot")),
+                    # plotly::plotlyOutput(outputId = ns("incrementalPlot"))
                     )
     )
   )
@@ -29,8 +35,9 @@ summary <- function(id, data, parentSession){
     function(input, output, session){
       ns <- session$ns
       shiny::observeEvent(input$updateplot,{
-        if(input$grouptoggle=="Individual"){
-          output$rawdataPlot <- plotly::renderPlotly({
+        #Define the code for the plots that can be rendered
+
+          output$rawdataPlotIndividual <- plotly::renderPlotly({
             req(data$longData)
             plotly::plot_ly(data = data$longData,
                             x = ~TimeElapsed,
@@ -43,7 +50,7 @@ summary <- function(id, data, parentSession){
                              yaxis = list(title = "Raw DVC Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
-          output$summaryPlot <- plotly::renderPlotly({
+          output$summaryPlotIndividual <- plotly::renderPlotly({
             req(data$longData)
             plotly::plot_ly(data = data$longData,
                             x = ~TimeElapsed,
@@ -60,7 +67,7 @@ summary <- function(id, data, parentSession){
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
 
-          output$incrementalPlot <- plotly::renderPlotly({
+          output$incrementalPlotIndividual <- plotly::renderPlotly({
             req(data$longData)
             plotly::plot_ly(data = data$longData,
                             x = ~TimeElapsed,
@@ -73,9 +80,8 @@ summary <- function(id, data, parentSession){
                              yaxis = list(title = "Incremental Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
-        }
-        if(input$grouptoggle=="Group"){
-          output$rawdataPlot <- plotly::renderPlotly({
+
+          output$rawdataPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
                             x = ~TimeElapsed,
@@ -93,7 +99,7 @@ summary <- function(id, data, parentSession){
                              yaxis = list(title = "Raw DVC Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
-          output$summaryPlot <- plotly::renderPlotly({
+          output$summaryPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
                             x = ~TimeElapsed,
@@ -115,7 +121,7 @@ summary <- function(id, data, parentSession){
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
 
-          output$incrementalPlot <- plotly::renderPlotly({
+          output$incrementalPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
                             x = ~TimeElapsed,
@@ -132,7 +138,35 @@ summary <- function(id, data, parentSession){
                              yaxis = list(title = "Incremental Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
-        }
+
+          #Define the switch that determines what is being displayed
+
+          output$selectedplot <- shiny::renderUI({
+            if(input$grouptoggle == "Individual"&input$plottoggle == "Cumulative Urination Plot"){
+              plotly::plotlyOutput(outputId = ns("summaryPlotIndividual"))
+            }
+            else if(input$grouptoggle == "Individual"&
+               input$plottoggle == "Incremental Plot"){
+              plotly::plotlyOutput(outputId = ns("incrementalPlotIndividual"))
+            }
+            else if(input$grouptoggle == "Individual"&
+               input$plottoggle == "Raw Data Plot"){
+              plotly::plotlyOutput(outputId = ns("rawdataPlotIndividual"))
+            }
+            else if(input$grouptoggle == "Group"&
+               input$plottoggle == "Incremental Plot"){
+              plotly::plotlyOutput(outputId = ns("incrementalPlotGroup"))
+            }
+            else if(input$grouptoggle == "Group"&
+               input$plottoggle == "Cumulative Urination Plot"){
+              plotly::plotlyOutput(outputId = ns("summaryPlotGroup"))
+            }
+            else if(input$grouptoggle == "Group"&
+               input$plottoggle == "Raw Data Plot"){
+              plotly::plotlyOutput(outputId = ns("rawdataPlotGroup"))
+            }
+          })
+
       })
 
     }

@@ -115,7 +115,11 @@ upload <- function(id, data, parentSession){
                         Include = dplyr::case_when(
                           abs(RollingMeanpoint) + 2*abs(RollingSDpoint) < abs(Value) ~ FALSE,
                           abs(RollingMeanpoint) + 2*abs(RollingSDpoint) > abs(Value) ~ TRUE
-                        )) |>
+                        ))
+        data$rawdata <- testdataLong |>
+          dplyr::rename(Individual= ID)
+
+        testdataLong <- testdataLong |>
           dplyr::filter(Include == TRUE) |>
           dplyr::mutate(AccumulatedValue = cumsum(Value),
                         RollingSDAcc = zoo::rollapply(AccumulatedValue,
@@ -148,19 +152,25 @@ upload <- function(id, data, parentSession){
 
         data$longData <- testdataLong
 
+        #prepare grouped data for figure generation
         testdataGroup <- testdataLong |>
           dplyr::group_by(Group, TimeElapsed) |>
-          dplyr::summarise(meanRawdata = mean(Rawdata),
-                           sdRawdata = sd(Rawdata),
-                           meanAccumulated = mean(AccumulatedValue),
-                           sdAccumulated = sd(AccumulatedValue),
-                           meanIncremental = mean(DeltaRollingMean),
-                           sdIncremental= sd(DeltaRollingMean),
-                           meanRolling = mean(RollingMeanAcc),
-                           sdRolling = sd(RollingMeanAcc))
+          dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
+                           sdRawdata = sd(Rawdata, na.rm = T),
+                           meanAccumulated = mean(AccumulatedValue, na.rm = T),
+                           sdAccumulated = sd(AccumulatedValue, na.rm = T),
+                           meanIncremental = mean(DeltaRollingMean, na.rm = T),
+                           sdIncremental= sd(DeltaRollingMean, na.rm = T),
+                           meanRolling = mean(RollingMeanAcc, na.rm = T),
+                           sdRolling = sd(RollingMeanAcc, na.rm = T))
         data$groupeddata <- testdataGroup
 
-
+        #prepare data for circadian plots
+                testdataCircadian <- testdataLong |>
+                  dplyr::group_by(Group, hour) |>
+                  dplyr::summarise(meanIncremental = mean(DeltaRollingMean, na.rm = T),
+                                   sdIncremental= sd(DeltaRollingMean, na.rm = T))
+        data$circadiandata <- testdataCircadian
 
         #switch to next tab
         shiny::updateTabsetPanel(session = parentSession,
