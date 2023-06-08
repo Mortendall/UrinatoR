@@ -35,6 +35,9 @@ ui <- shiny::fluidPage(
                      shiny::tabPanel(title = "Data Upload",
                                      uploadUI("upload"),
                                      value = "uploadPage"),
+                     shiny::tabPanel(title = "Preprocessing",
+                                     preprocessingUI("preprocess"),
+                                     value = "preprocess"),
                      shiny::tabPanel(title = "Summary figure",
                                      summaryFigUI("summary"),
                                      value = "summaryFig"),
@@ -47,6 +50,7 @@ ui <- shiny::fluidPage(
 server <-function(input, output, session){
   parentSession <- session
   upload("upload",dataSheet, parentSession)
+  preprocessing("preprocess", dataSheet, parentSession)
   summary("summary", dataSheet, parentSession)
   circadian("circadian",dataSheet,parentSession)
 }

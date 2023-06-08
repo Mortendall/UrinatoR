@@ -21,21 +21,24 @@ circadian <- function(id, data, parentSession){
         req(data$groupeddata)
         yaxismaxdata <- data$circadiandata |>
           dplyr::filter(meanIncremental == max(data$circadiandata$meanIncremental))
-        yaxismax <- yaxismaxdata$meanIncremental+yaxismaxdata$sdIncremental
+        yaxismax <- yaxismaxdata$meanIncremental
+        #+yaxismaxdata$sdIncremental
 
         output$circadiansummary <- plotly::renderPlotly({
           plotly::plot_ly(data = data$circadiandata,
                           x = ~hour,
                           y = ~meanIncremental,
-                          color = ~Group,
-                          type = "bar",
-                          error_y =~list(array = sdIncremental,
-                                          color = "black",
-                                          thickness = 1)
+                          color = ~Individual,
+                          type = "scatter",
+                          mode = "lines"
+                          #,
+                          # error_y =~list(array = sdIncremental,
+                          #                 color = "black",
+                          #                 thickness = 1)
           ) |>
             plotly::layout(title = "Circadian Plot of Incremental Data",
                            yaxis = list(title = "Incremental Signal Increase"),
-                           xaxis = list(title = "ZT time"),
+                           xaxis = list(title = "Time"),
                            shapes = list(
                              list(type = "rect",
                                   fillcolor = "black",

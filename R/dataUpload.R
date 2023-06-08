@@ -3,11 +3,13 @@ uploadUI <- function(id){
   shiny::fluidPage(
     shiny::fluidRow(
       shiny::column(12,
-                    shiny::h4("Upload a DVC file"),
+                    shiny::h4("Upload a DVC file or load demo data"),
                      shiny::fileInput(inputId = ns("fileUpload"),
                                        label = "Upload a DVC file as csv",
                                        buttonLabel = "Upload",
                                        accept = ".csv"),
+                    shiny::actionButton(inputId = ns("demodata"),
+                                        label = "Load demodata"),
                     shiny::uiOutput(outputId = ns("Table"))
                     )
                     )
@@ -74,6 +76,16 @@ upload <- function(id, data, parentSession){
         rhandsontable::rhandsontable(data$trimmedData)
       })
 
+      shiny::observeEvent(input$demodata,{
+        data$longData <- readRDS(here::here("Data/testData.rds"))
+        data$circadiandata <- readRDS(here::here("Data/testCircadian.rds"))
+        data$groupeddata <- readRDS(here::here("Data/testGrouped.rds"))
+        shiny::updateTabsetPanel(session = parentSession,
+                                 inputId = "inTabset",
+                                 selected = "summaryFig")
+      }
+      )
+
       #This code controls what happens when data process button is selected.
       #Data is processed and user is sent to next page
       shiny::observeEvent(input$ProcessData,{
@@ -95,46 +107,31 @@ upload <- function(id, data, parentSession){
                               values_to = "Rawdata") |>
           dplyr::group_by(ID) |>
           dplyr::arrange(TimeElapsed) |>
-          dplyr::mutate(Rawdata = as.numeric(stringr::str_replace_all(Rawdata, ",", ".")),
-                        Value = Rawdata - dplyr::lead(Rawdata,
-                                                      default = dplyr::last(Rawdata)))
+          dplyr::mutate(Rawdata = as.numeric(stringr::str_replace_all(Rawdata, ",", "."))
+                        ,
+                         Value = Rawdata - dplyr::lead(Rawdata,
+                                            default = dplyr::last(Rawdata))
+                        )
 
         #calculate rolling mean and rolling sd
         testdataLong <- testdataLong |>
-          dplyr::mutate(RollingSDpoint = zoo::rollapply(Value,
-                                                        50,
+          dplyr::mutate(RollingSDpoint = zoo::rollapply(Rawdata,
+                                                        48,
                                                         sd,
-                                                        fill = NA,
-                                                        partial = T),
-                        RollingMeanpoint = zoo::rollapply(Value,
-                                                          50,
-                                                          mean,
-                                                          fill = NA,
-                                                          partial = T),
-                        #exclude outliers when RollingMean + 2*RollingSD is larger than value
-                        Include = dplyr::case_when(
-                          abs(RollingMeanpoint) + 2*abs(RollingSDpoint) < abs(Value) ~ FALSE,
-                          abs(RollingMeanpoint) + 2*abs(RollingSDpoint) > abs(Value) ~ TRUE
-                        ))
-        data$rawdata <- testdataLong |>
+                                                        fill = 0,
+                                                        partial = T,
+                                                        align = "left"),
+                         Include = dplyr::case_when(
+                           RollingSDpoint < abs(Value) ~ 1,
+                           RollingSDpoint > abs(Value) ~ 0
+                         ),
+                        CorrectedValue = dplyr::case_when(
+                          Include == 0 ~ Value,
+                          Include == 1 ~ NA
+                        )
+                        )|>
           dplyr::rename(Individual= ID)
 
-        testdataLong <- testdataLong |>
-          dplyr::filter(Include == TRUE) |>
-          dplyr::mutate(AccumulatedValue = cumsum(Value),
-                        RollingSDAcc = zoo::rollapply(AccumulatedValue,
-                                                      50,
-                                                      sd,
-                                                      fill = NA,
-                                                      partial = T),
-                        RollingMeanAcc = zoo::rollapply(AccumulatedValue,
-                                                        50,
-                                                        mean,
-                                                        fill = NA,
-                                                        partial = T),
-                        DeltaRollingMean = RollingMeanAcc - lag(RollingMeanAcc)
-          ) |>
-          dplyr::rename(Individual= ID)
 
         #function to add group based on ID
         testdataLong$Group <- NA
@@ -151,31 +148,33 @@ upload <- function(id, data, parentSession){
           dplyr::arrange(TimeElapsed)
 
         data$longData <- testdataLong
-
         #prepare grouped data for figure generation
         testdataGroup <- testdataLong |>
           dplyr::group_by(Group, TimeElapsed) |>
-          dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
-                           sdRawdata = sd(Rawdata, na.rm = T),
-                           meanAccumulated = mean(AccumulatedValue, na.rm = T),
-                           sdAccumulated = sd(AccumulatedValue, na.rm = T),
-                           meanIncremental = mean(DeltaRollingMean, na.rm = T),
-                           sdIncremental= sd(DeltaRollingMean, na.rm = T),
-                           meanRolling = mean(RollingMeanAcc, na.rm = T),
-                           sdRolling = sd(RollingMeanAcc, na.rm = T))
+           dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
+                            sdRawdata = sd(Rawdata, na.rm = T),
+                            meanCorrectedValue = mean(CorrectedValue, na.rm = T),
+                            sdCorrectedValue = sd(CorrectedValue, na.rm = T)
+           )
         data$groupeddata <- testdataGroup
 
         #prepare data for circadian plots
                 testdataCircadian <- testdataLong |>
-                  dplyr::group_by(Group, hour) |>
-                  dplyr::summarise(meanIncremental = mean(DeltaRollingMean, na.rm = T),
-                                   sdIncremental= sd(DeltaRollingMean, na.rm = T))
+                  dplyr::group_by(Individual, hour)|>
+                    dplyr::summarise(
+                       meanIncremental = mean(CorrectedValue, na.rm = T)
+                       ,sdIncremental= sd(CorrectedValue, na.rm = T))
         data$circadiandata <- testdataCircadian
+
+        #prepare group data
+        data$groupinfo <- data.frame("CageID"= unique(data$longData$Individual),
+                                     "No.ofAnimals" = 1)
 
         #switch to next tab
         shiny::updateTabsetPanel(session = parentSession,
                                  inputId = "inTabset",
-                                 selected = "summaryFig")
+                                 selected = "preprocess")
+
 
       })
 
