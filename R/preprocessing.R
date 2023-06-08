@@ -5,7 +5,11 @@ preprocessingUI <- function(id){
       shiny::column(4,
                     shiny::uiOutput(outputId = ns("animalnumber"))),
       shiny::column(8,
-                    shiny::uiOutput(outputId = ns("select"))
+                    shiny::uiOutput(outputId = ns("select")),
+                    shiny::h6("Confirm no. of animals pr. cage and press button to normalize and continue"),
+                    shiny::actionButton(inputId = ns("continue"),
+                                        label = "Continue to graphs",
+                                        icon = shiny::icon("arrow-right"))
                                        ))
     )
 }
@@ -16,6 +20,7 @@ preprocessing <- function(id, data, parentSession){
     function( input, output, session){
       ns <- session$ns
 
+      #####Select individual to display####
       #Code determining what is rendered when data is loaded in
       output$select <- shiny::renderUI({
         req(data$longData)
@@ -28,8 +33,8 @@ preprocessing <- function(id, data, parentSession){
           )
       })
 
+      #####Table for no. of animals pr cage input####
       #code for the table to change number of mice pr. cage
-
       output$animalnumber <- shiny::renderUI({
         req(data$longData)
         shiny::tagList(
@@ -39,6 +44,7 @@ preprocessing <- function(id, data, parentSession){
         )
       })
 
+      #####Exclusion plot####
       #Plot showing the raw data with dashed lines for exclusions
       output$excluded <- plotly::renderPlotly({
         req(data$longData)
@@ -69,6 +75,7 @@ preprocessing <- function(id, data, parentSession){
         p |>plotly::layout(showlegend = F)
       })
 
+      #####Table code for no. of animals####
       #code for the table that allows you to input animal number
       output$animaltable <- rhandsontable::renderRHandsontable({
         req(data$groupinfo)
@@ -80,9 +87,8 @@ preprocessing <- function(id, data, parentSession){
                                  format = "0")
       })
 
-      #save changes made to the table. Send an error if character input in
-      #number of animals
-
+      #####Save changes made to the table ####
+      #. Send an error if character input in number of animals
       shiny::observeEvent(input$savedata,{
         if(any(is.na(rhandsontable::hot_to_r(input$animaltable)))==T){
           shinyWidgets::sendSweetAlert(
@@ -93,8 +99,84 @@ preprocessing <- function(id, data, parentSession){
         }
         else{
           data$groupinfo <- rhandsontable::hot_to_r(input$animaltable)
+          shinyWidgets::sendSweetAlert(
+            title = "Input Saved",
+            text = "You are good to go!",
+            type = "success"
+          )
                 }
 
+      })
+
+      #####Normalize + group data and continue to graphs####
+      shiny::observeEvent(
+        input$continue,
+        {
+          data$longData <- dplyr::left_join(data$longData,
+                                            data$groupinfo,
+                                            by = c("Individual" = "CageID")) |>
+            dplyr::mutate(NormalizedValue = dplyr::case_when(
+              !is.na(CorrectedValue) ~ CorrectedValue / No.ofAnimals,
+              is.na(CorrectedValue) ~ NA
+            )) |>
+            dplyr::group_by(Individual) |>
+            dplyr::mutate(CumulativeNormalized = cumsum(ifelse(is.na(NormalizedValue),
+                                                               0,
+                                                               NormalizedValue)))
+
+
+
+
+          #prepare grouped data for figure generation
+        data$groupeddata  <- data$longData |>
+          dplyr::group_by(Group, TimeElapsed) |>
+          dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
+                           sdRawdata = sd(Rawdata, na.rm = T),
+                           meanCorrectedValue = mean(CorrectedValue, na.rm = T),
+                           sdCorrectedValue = sd(CorrectedValue, na.rm = T),
+                           meanNormalized = mean(NormalizedValue, na.rm = T),
+                           sdNormalized = sd(NormalizedValue, na.rm = T),
+                           meanCumulativeNorm = mean(CumulativeNormalized, na.rm = T),
+                           sdCumulativeNorm = sd(CumulativeNormalized, na.rm = T )
+          )
+
+        #prepare data for circadian plots
+        data$circadiandata <- data$longData |>
+          dplyr::group_by(Individual, hour)|>
+          dplyr::summarise(
+            meanRawdata = mean(Rawdata, na.rm = T),
+            sdRawdata = sd(Rawdata, na.rm = T),
+            meanCorrectedValue = mean(CorrectedValue, na.rm = T),
+            sdCorrectedValue = sd(CorrectedValue, na.rm = T),
+            meanNormalized = mean(NormalizedValue, na.rm = T),
+            sdNormalized = sd(NormalizedValue, na.rm = T)) |>
+          dplyr::mutate(ZT = dplyr::case_when(
+            hour >= 6 ~ hour - 6,
+            hour < 6 ~ hour + 18
+          ))|>
+          dplyr::arrange(ZT)
+
+
+        #group circadian
+        data$circadiandatagroup <- data$longData |>
+          dplyr::group_by(Group, hour)|>
+          dplyr::summarise(
+            meanNormalizedGroup = mean(CorrectedValue, na.rm = T),
+            sdNormalizedGroup = sd(CorrectedValue, na.rm = T))|>
+          dplyr::mutate(ZT = dplyr::case_when(
+            hour >= 6 ~ hour - 6,
+            hour < 6 ~ hour + 18
+          )) |>
+          dplyr::arrange(ZT)
+
+
+
+        #Update tabsets
+
+
+        shiny::updateTabsetPanel(session = parentSession,
+                                 inputId = "inTabset",
+                                 selected = "summaryFig")
       })
     }
   )

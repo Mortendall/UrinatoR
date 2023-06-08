@@ -8,9 +8,9 @@ uploadUI <- function(id){
                                        label = "Upload a DVC file as csv",
                                        buttonLabel = "Upload",
                                        accept = ".csv"),
+                    shiny::uiOutput(outputId = ns("Table")),
                     shiny::actionButton(inputId = ns("demodata"),
-                                        label = "Load demodata"),
-                    shiny::uiOutput(outputId = ns("Table"))
+                                        label = "Load demodata")
                     )
                     )
   )
@@ -36,13 +36,13 @@ upload <- function(id, data, parentSession){
                                         locale = vroom::locale(decimal_mark = ","))
 
            #extract group names from column headers
-           testdataCols <- colnames(data$rawData)
-           testGroups <- stringr::str_subset(testdataCols,
+
+           testGroups <- stringr::str_subset(colnames(data$rawData),
                                              pattern = "_TIMESTAMP$")
-           testGroups <- stringr::str_replace(testGroups,
+           data$groups <- stringr::str_replace(testGroups,
                                               pattern = "_TIMESTAMP",
                                               replacement = "")
-           data$groups <- testGroups
+
            #remove irrelevant columns
            data$trimmedData<- data$rawData |>
              dplyr::select(!tidyselect::ends_with(c("QRT",
@@ -51,6 +51,32 @@ upload <- function(id, data, parentSession){
                                                     "SAMPLES")
              )
              )
+
+           #Data are time-stamped and vroom cannot handle that. We therefore
+           #import the data again for the first time stamp and extract the info
+           #we need
+
+           headername <- stringr::str_subset(colnames(data$rawData),
+                                             pattern = "_TIMESTAMP$")[1]
+
+           firsttimestamp <- vroom::vroom(datafile$datapath,
+                                          show_col_types = F,
+                                          delim = ";",
+                                          locale = vroom::locale(decimal_mark = ","),
+                                          col_select = headername,
+                                          col_types = vroom::cols(.default = "c"))
+           timeadjust <- stringr::str_extract(firsttimestamp[1,1],
+                                              pattern = "[:digit:]{4}$")
+
+
+           timeadjustTime <- lubridate::hm(paste0(stringr::str_extract(timeadjust,
+                                                                      pattern = "^[:digit:]{2}"),
+                                                  ":",
+                                                 stringr::str_extract(timeadjust,
+                                                                      pattern = "[:digit:]{2}$")))
+           timeadjustFactor <- as.numeric(timeadjustTime)/3600
+           data$trimmedData <- data$trimmedData |>
+             dplyr::mutate(hour = hour + timeadjustFactor)
          }
          )
       output$Table<-  shiny::renderUI({
@@ -69,7 +95,7 @@ upload <- function(id, data, parentSession){
         paste("The following groups have been detected in the dataset: ",
               paste(data$groups, collapse = ", "))
       })
-#original version included table of data, but this did not contribute much.
+      #original version included table of data, but this did not contribute much.
       #I have therefore commented it out from being rendered
       output$dataScreen <- rhandsontable::renderRHandsontable({
         req(data$trimmedData)
@@ -97,12 +123,12 @@ upload <- function(id, data, parentSession){
           #but when the animals were placed in the system
           dplyr::slice(-1) |>
           dplyr::select(- tidyselect::ends_with("TIMESTAMP"),
-                        -day,
+                        #-day,
                         -minute,
                         - tidyselect::ends_with("SAMPLES")) |>
           dplyr::mutate(TimeElapsed = relativeTime/3600-TimeZero) |>
           dplyr::select(-relativeTime) |>
-          tidyr::pivot_longer(cols = - c(TimeElapsed, hour),
+          tidyr::pivot_longer(cols = - c(TimeElapsed, hour, day),
                               names_to = "ID",
                               values_to = "Rawdata") |>
           dplyr::group_by(ID) |>
@@ -121,9 +147,11 @@ upload <- function(id, data, parentSession){
                                                         fill = 0,
                                                         partial = T,
                                                         align = "left"),
+                        #originally include tested against abs(Value) instead of -Value
+                        #but this was changed to only detect sharp increases
                          Include = dplyr::case_when(
-                           RollingSDpoint < abs(Value) ~ 1,
-                           RollingSDpoint > abs(Value) ~ 0
+                           RollingSDpoint < -Value ~ 1,
+                           RollingSDpoint > -Value ~ 0
                          ),
                         CorrectedValue = dplyr::case_when(
                           Include == 0 ~ Value,
@@ -148,23 +176,6 @@ upload <- function(id, data, parentSession){
           dplyr::arrange(TimeElapsed)
 
         data$longData <- testdataLong
-        #prepare grouped data for figure generation
-        testdataGroup <- testdataLong |>
-          dplyr::group_by(Group, TimeElapsed) |>
-           dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
-                            sdRawdata = sd(Rawdata, na.rm = T),
-                            meanCorrectedValue = mean(CorrectedValue, na.rm = T),
-                            sdCorrectedValue = sd(CorrectedValue, na.rm = T)
-           )
-        data$groupeddata <- testdataGroup
-
-        #prepare data for circadian plots
-                testdataCircadian <- testdataLong |>
-                  dplyr::group_by(Individual, hour)|>
-                    dplyr::summarise(
-                       meanIncremental = mean(CorrectedValue, na.rm = T)
-                       ,sdIncremental= sd(CorrectedValue, na.rm = T))
-        data$circadiandata <- testdataCircadian
 
         #prepare group data
         data$groupinfo <- data.frame("CageID"= unique(data$longData$Individual),

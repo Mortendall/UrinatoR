@@ -20,10 +20,8 @@ summaryFigUI <- function(id){
     ,
     shiny::fluidRow(
       shiny::column(width = 12,
-                    shiny::uiOutput(outputId = ns("selectedplot"))
-                    # plotly::plotlyOutput(outputId = ns("rawdataPlot")),
-                    # plotly::plotlyOutput(outputId = ns("summaryPlot")),
-                    # plotly::plotlyOutput(outputId = ns("incrementalPlot"))
+                    shiny::uiOutput(outputId = ns("selectedplot")
+                                    )
                     )
     )
   )
@@ -34,9 +32,11 @@ summary <- function(id, data, parentSession){
     id,
     function(input, output, session){
       ns <- session$ns
-      shiny::observeEvent(input$updateplot,{
-        #Define the code for the plots that can be rendered
 
+      #####Plot code####
+      shiny::observeEvent(input$updateplot,{
+
+        #Rawdata for individuals
           output$rawdataPlotIndividual <- plotly::renderPlotly({
             req(data$longData)
             plotly::plot_ly(data = data$longData,
@@ -50,37 +50,39 @@ summary <- function(id, data, parentSession){
                              yaxis = list(title = "Raw DVC Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
+
+          #I
           output$summaryPlotIndividual <- plotly::renderPlotly({
             req(data$longData)
             plotly::plot_ly(data = data$longData,
                             x = ~TimeElapsed,
-                            y = ~AccumulatedValue,
+                            y = ~CumulativeNormalized,
                             color = ~Individual,
                             type = "scatter",
-                            mode = "markers"
-            ) |> plotly::add_trace(x = ~TimeElapsed,
-                                   y = ~RollingMeanAcc,
-                                   type = "scatter",
-                                   mode = "lines")|>
-              plotly::layout(title = "Cumulative Urination",
+                            mode = "lines"
+            ) |>
+              plotly::layout(title = "Cumulative Urination pr. mouse",
                              yaxis = list(title = "Accumulated Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
 
+          #Incremental Plot
           output$incrementalPlotIndividual <- plotly::renderPlotly({
             req(data$longData)
             plotly::plot_ly(data = data$longData,
                             x = ~TimeElapsed,
-                            y = ~DeltaRollingMean,
+                            y = ~NormalizedValue,
                             color = ~Individual,
                             type = "scatter",
                             mode = "lines"
             ) |>
               plotly::layout(title = "Incremental Change w. Bedding Change Removed",
-                             yaxis = list(title = "Incremental Signal"),
+                             yaxis = list(title = "Incremental Signal pr. mouse"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
 
+          #Same figures but grouped data
+          #Raw data grouped
           output$rawdataPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
@@ -99,33 +101,28 @@ summary <- function(id, data, parentSession){
                              yaxis = list(title = "Raw DVC Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
+
+          #Grouped cumulative urination
           output$summaryPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
                             x = ~TimeElapsed,
-                            y = ~meanAccumulated,
+                            y = ~meanCumulativeNorm,
                             color = ~Group,
                             type = "scatter",
-                            mode = "markers"
-            ) |> plotly::add_trace(x = ~TimeElapsed,
-                                   y = ~meanRolling,
-                                   type = "scatter",
-                                   mode = "lines"
-                                   # ,
-                                   # error_y = ~list(array = sdRolling,
-                                   #                 color = "black",
-                                   #                 thickness = 0.1)
-                                   )|>
-              plotly::layout(title = "Cumulative Urination",
+                            mode = "lines"
+            ) |>
+              plotly::layout(title = "Average Cumulative Urination pr. Mouse",
                              yaxis = list(title = "Accumulated Signal"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
 
+          #Incremental plot
           output$incrementalPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
                             x = ~TimeElapsed,
-                            y = ~meanIncremental,
+                            y = ~meanNormalized,
                             color = ~Group,
                             type = "scatter",
                             mode = "lines"
