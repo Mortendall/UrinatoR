@@ -169,6 +169,13 @@ preprocessing <- function(id, data, parentSession){
           )) |>
           dplyr::arrange(ZT)
 
+        # saveRDS(data$circadiandatagroup, here::here("Data/circadiangroup.rds"))
+        # saveRDS(data$circadiandata, here::here("Data/circadian.rds"))
+        # saveRDS(data$longData, here::here("Data/longData.rds"))
+        # saveRDS(data$groupeddata, here::here("Data/groupeddata.rds"))
+
+
+
 
 
         #Update tabsets

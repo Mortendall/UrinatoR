@@ -1,3 +1,4 @@
+
 uploadUI <- function(id){
   ns <- shiny::NS(id)
   shiny::fluidPage(
@@ -103,9 +104,10 @@ upload <- function(id, data, parentSession){
       })
 
       shiny::observeEvent(input$demodata,{
-        data$longData <- readRDS(here::here("Data/testData.rds"))
-        data$circadiandata <- readRDS(here::here("Data/testCircadian.rds"))
-        data$groupeddata <- readRDS(here::here("Data/testGrouped.rds"))
+        data$longData <- readRDS(here::here("Data/longData.rds"))
+        data$circadiandata <- readRDS(here::here("Data/circadian.rds"))
+        data$groupeddata <- readRDS(here::here("Data/groupeddata.rds"))
+        data$circadiandatagroup <- readRDS(here::here("Data/circadiangroup.rds"))
         shiny::updateTabsetPanel(session = parentSession,
                                  inputId = "inTabset",
                                  selected = "summaryFig")

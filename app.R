@@ -1,28 +1,16 @@
 library(shiny)
-library(shinycssloaders)
-library(shinyWidgets)
-library(rstatix)
-library(patchwork)
-library(wesanderson)
+
 library(rhandsontable)
-library(dplyr)
-library(ggplot2)
-library(here)
-library(openxlsx)
-library(data.table)
-library(lubridate)
-library(plotly)
-library(bslib)
 
 options(shiny.maxRequestSize = 500*1024^2)
-cores <- parallel::detectCores()
-cl <- parallel::makeCluster(cores[1] - 1)
-doParallel::registerDoParallel(cl)
-
-on.exit({
-  parallel::stopCluster(cl)
-  foreach::registerDoSEQ()
-})
+# cores <- parallel::detectCores()
+# cl <- parallel::makeCluster(cores[1] - 1)
+# doParallel::registerDoParallel(cl)
+#
+# on.exit({
+#   parallel::stopCluster(cl)
+#   foreach::registerDoSEQ()
+# })
 
 dataSheet <- shiny::reactiveValues()
 
