@@ -32,14 +32,14 @@ circadian <- function(id, data, parentSession){
         output$circadiansummaryindividual <- plotly::renderPlotly({
           plotly::plot_ly(data = data$circadiandata,
                           x = ~ZT,
-                          y = ~meanNormalized,
+                          y = ~meanNormalizedcircadian,
                           color = ~Individual,
                           type = "scatter",
                           mode = "lines"
-                          #,
-                          # error_y =~list(array = sdIncremental,
-                          #                 color = "black",
-                          #                 thickness = 1)
+                          ,
+                           error_y =~list(array = semNormalized,
+                                           color = "black",
+                                           thickness = 1)
           ) |>
             plotly::layout(title = "Circadian Plot of Incremental Data",
                            yaxis = list(title = "Incremental Signal Increase"),
@@ -53,7 +53,7 @@ circadian <- function(id, data, parentSession){
                                   x1 = 23,
                                   xref  = "x",
                                    y0 = 0,
-                                   y1 = max(data$circadiandata$meanNormalized),
+                                   y1 = max(data$circadiandata$meanNormalizedcircadian),
                                   yref = "y")
                            ))
         })
@@ -65,10 +65,10 @@ circadian <- function(id, data, parentSession){
                           color = ~Group,
                           type = "scatter",
                           mode = "lines"
-                          #,
-                          # error_y =~list(array = sdIncremental,
-                          #                 color = "black",
-                          #                 thickness = 1)
+                          ,
+                           error_y =~list(array = semNormalizedGroup,
+                                           color = "black",
+                                           thickness = 1)
           ) |>
             plotly::layout(title = "Circadian Plot of Incremental Data",
                            yaxis = list(title = "Incremental Signal Increase"),

@@ -188,7 +188,6 @@ upload <- function(id, data, parentSession){
                                  inputId = "inTabset",
                                  selected = "preprocess")
 
-
       })
 
       })

@@ -140,44 +140,55 @@ preprocessing <- function(id, data, parentSession){
                            sdCumulativeNorm = sd(CumulativeNormalized, na.rm = T )
           )
 
+        #prepare data for hourly urination pr week
+        data$hourly <- data$longData |>
+          dplyr::mutate(week = (day - (day %% 7))/7) |>
+          dplyr::group_by(Individual, hour, week) |>
+          dplyr::summarise(
+            meanNormalized = mean(NormalizedValue,
+                                  na.rm = T),
+            n = n()
+          )
+
         #prepare data for circadian plots
-        data$circadiandata <- data$longData |>
+        data$circadiandata <- data$hourly |>
           dplyr::group_by(Individual, hour)|>
           dplyr::summarise(
-            meanRawdata = mean(Rawdata, na.rm = T),
-            sdRawdata = sd(Rawdata, na.rm = T),
-            meanCorrectedValue = mean(CorrectedValue, na.rm = T),
-            sdCorrectedValue = sd(CorrectedValue, na.rm = T),
-            meanNormalized = mean(NormalizedValue, na.rm = T),
-            sdNormalized = sd(NormalizedValue, na.rm = T)) |>
+            meanNormalizedcircadian = mean(meanNormalized, na.rm = T),
+            semNormalized = sd(meanNormalized, na.rm = T),
+            n = n()) |>
           dplyr::mutate(ZT = dplyr::case_when(
             hour >= 6 ~ hour - 6,
             hour < 6 ~ hour + 18
-          ))|>
+          ),
+          semNormalized = semNormalized/n)|>
           dplyr::arrange(ZT)
-
 
         #group circadian
-        data$circadiandatagroup <- data$longData |>
+        data$circadiandatagroup <- data$hourly|>
+          dplyr::mutate(Group = stringr::str_extract(Individual,
+                                                     "[:graph:]+(?=_Box)")) |>
           dplyr::group_by(Group, hour)|>
           dplyr::summarise(
-            meanNormalizedGroup = mean(CorrectedValue, na.rm = T),
-            sdNormalizedGroup = sd(CorrectedValue, na.rm = T))|>
+            meanNormalizedGroup = mean(meanNormalized, na.rm = T),
+            semNormalizedGroup = sd(meanNormalized, na.rm = T),
+            n = n())|>
           dplyr::mutate(ZT = dplyr::case_when(
             hour >= 6 ~ hour - 6,
             hour < 6 ~ hour + 18
-          )) |>
+          ),
+          semNormalizedGroup = semNormalizedGroup/n) |>
           dplyr::arrange(ZT)
+
+
+
+
 
 
           # saveRDS(data$circadiandatagroup, here::here("Data/circadiangroup.rds"))
           # saveRDS(data$circadiandata, here::here("Data/circadian.rds"))
           # saveRDS(data$longData, here::here("Data/longData.rds"))
           # saveRDS(data$groupeddata, here::here("Data/groupeddata.rds"))
-
-
-
-
 
         #Update tabsets
 
