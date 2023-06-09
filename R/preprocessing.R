@@ -147,7 +147,7 @@ preprocessing <- function(id, data, parentSession){
           dplyr::summarise(
             meanNormalized = mean(NormalizedValue,
                                   na.rm = T),
-            n = n()
+            n = dplyr::n()
           )
 
         #prepare data for circadian plots
@@ -156,7 +156,7 @@ preprocessing <- function(id, data, parentSession){
           dplyr::summarise(
             meanNormalizedcircadian = mean(meanNormalized, na.rm = T),
             semNormalized = sd(meanNormalized, na.rm = T),
-            n = n()) |>
+            n = dplyr::n()) |>
           dplyr::mutate(ZT = dplyr::case_when(
             hour >= 6 ~ hour - 6,
             hour < 6 ~ hour + 18
@@ -172,7 +172,7 @@ preprocessing <- function(id, data, parentSession){
           dplyr::summarise(
             meanNormalizedGroup = mean(meanNormalized, na.rm = T),
             semNormalizedGroup = sd(meanNormalized, na.rm = T),
-            n = n())|>
+            n = dplyr::n())|>
           dplyr::mutate(ZT = dplyr::case_when(
             hour >= 6 ~ hour - 6,
             hour < 6 ~ hour + 18
