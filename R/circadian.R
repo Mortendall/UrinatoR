@@ -59,9 +59,9 @@ circadian <- function(id, data, parentSession){
         })
         #code for grouped plot
         output$plotsummarygroup <- plotly::renderPlotly({
-          plotly::plot_ly(data = data$circadiandatagrouped,
+          plotly::plot_ly(data = data$circadiandatagroup,
                           x = ~ZT,
-                          y = ~meanNormalized,
+                          y = ~meanNormalizedGroup,
                           color = ~Group,
                           type = "scatter",
                           mode = "lines"
@@ -82,7 +82,7 @@ circadian <- function(id, data, parentSession){
                                   x1 = 23,
                                   xref  = "x",
                                   y0 = 0,
-                                  y1 = max(data$circadiandata$meanNormalized),
+                                  y1 = max(data$circadiandatagroup$meanNormalizedGroup),
                                   yref = "y")
                            ))
         })
