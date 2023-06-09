@@ -31,7 +31,10 @@ ui <- shiny::fluidPage(
                                      value = "summaryFig"),
                      shiny::tabPanel(title = "Circadian plot",
                                      circadianUI("circadian"),
-                                     value = "circadian")
+                                     value = "circadian"),
+                     shiny::tabPanel(title = "Download Data",
+                                     downloadUI("download"),
+                                     value = "download")
                      )
 )
 
@@ -41,6 +44,7 @@ server <-function(input, output, session){
   preprocessing("preprocess", dataSheet, parentSession)
   summary("summary", dataSheet, parentSession)
   circadian("circadian",dataSheet,parentSession)
+  download("download", dataSheet, parentSession)
 }
 
 shinyApp(ui = ui, server = server)
