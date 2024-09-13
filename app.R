@@ -3,16 +3,17 @@ library(shiny)
 library(rhandsontable)
 
 options(shiny.maxRequestSize = 500*1024^2)
-# cores <- parallel::detectCores()
-# cl <- parallel::makeCluster(cores[1] - 1)
-# doParallel::registerDoParallel(cl)
-#
-# on.exit({
-#   parallel::stopCluster(cl)
-#   foreach::registerDoSEQ()
-# })
 
-dataSheet <- shiny::reactiveValues()
+ cores <- parallel::detectCores()
+ cl <- parallel::makeCluster(cores[1] - 1)
+ doParallel::registerDoParallel(cl)
+
+ on.exit({
+   parallel::stopCluster(cl)
+   foreach::registerDoSEQ()
+ })
+
+
 
 ui <- shiny::fluidPage(
   theme = bslib::bs_theme(version = 5,
@@ -39,6 +40,7 @@ ui <- shiny::fluidPage(
 )
 
 server <-function(input, output, session){
+  dataSheet <- shiny::reactiveValues()
   parentSession <- session
   upload("upload",dataSheet, parentSession)
   preprocessing("preprocess", dataSheet, parentSession)

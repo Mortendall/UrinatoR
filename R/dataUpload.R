@@ -5,10 +5,18 @@ uploadUI <- function(id){
     shiny::fluidRow(
       shiny::column(12,
                     shiny::h4("Upload a DVC file or load demo data"),
-                     shiny::fileInput(inputId = ns("fileUpload"),
-                                       label = "Upload a DVC file as csv",
-                                       buttonLabel = "Upload",
-                                       accept = ".csv"),
+                    shiny::selectInput(inputId = ns("seperator"),
+                                       label = "Select seperator in CSV",
+                                       choices = c(",", ";"),
+                                       selected = ";"),
+                    shiny::selectInput(inputId = ns("decimal"),
+                                       label = "Select regional decimal mark",
+                                       choices = c(",", "."),
+                                       selected = "."),
+                    shiny::fileInput(inputId = ns("fileUpload"),
+                                     label = "Upload a DVC file as csv - be sure to select correct decimal and seperator!",
+                                     buttonLabel = "Upload",
+                                     accept = ".csv"),
                     shiny::uiOutput(outputId = ns("Table")),
                     shiny::actionButton(inputId = ns("demodata"),
                                         label = "Load demodata")
@@ -33,8 +41,9 @@ upload <- function(id, data, parentSession){
            validate(need(ext == "csv", "Please upload a csv file"))
            data$rawData <- vroom::vroom(datafile$datapath,
                                         show_col_types = F,
-                                        delim = ";",
-                                        locale = vroom::locale(decimal_mark = ","))
+                                        delim = input$seperator,
+                                        locale = vroom::locale(decimal_mark = input$decimal)
+                                        )
 
            #extract group names from column headers
 
@@ -43,6 +52,7 @@ upload <- function(id, data, parentSession){
            data$groups <- stringr::str_replace(testGroups,
                                               pattern = "_TIMESTAMP",
                                               replacement = "")
+
 
            #remove irrelevant columns
            data$trimmedData<- data$rawData |>
@@ -53,6 +63,8 @@ upload <- function(id, data, parentSession){
              )
              )
 
+
+
            #Data are time-stamped and vroom cannot handle that. We therefore
            #import the data again for the first time stamp and extract the info
            #we need
@@ -62,8 +74,8 @@ upload <- function(id, data, parentSession){
 
            firsttimestamp <- vroom::vroom(datafile$datapath,
                                           show_col_types = F,
-                                          delim = ";",
-                                          locale = vroom::locale(decimal_mark = ","),
+                                          delim = input$seperator,
+                                          locale = vroom::locale(decimal_mark = input$decimal),
                                           col_select = headername,
                                           col_types = vroom::cols(.default = "c"))
            timeadjust <- stringr::str_extract(firsttimestamp[1,1],
