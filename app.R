@@ -4,14 +4,14 @@ library(rhandsontable)
 
 options(shiny.maxRequestSize = 500*1024^2)
 
- cores <- parallel::detectCores()
- cl <- parallel::makeCluster(cores[1] - 1)
- doParallel::registerDoParallel(cl)
-
- on.exit({
-   parallel::stopCluster(cl)
-   foreach::registerDoSEQ()
- })
+ # cores <- parallel::detectCores()
+ # cl <- parallel::makeCluster(cores[1] - 1)
+ # doParallel::registerDoParallel(cl)
+ #
+ # on.exit({
+ #   parallel::stopCluster(cl)
+ #   foreach::registerDoSEQ()
+ # })
 
 
 

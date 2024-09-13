@@ -45,6 +45,8 @@ upload <- function(id, data, parentSession){
                                         locale = vroom::locale(decimal_mark = input$decimal)
                                         )
 
+           #write in check of columns if to check if right format has been submitted
+
            #extract group names from column headers
 
            testGroups <- stringr::str_subset(colnames(data$rawData),
@@ -78,18 +80,29 @@ upload <- function(id, data, parentSession){
                                           locale = vroom::locale(decimal_mark = input$decimal),
                                           col_select = headername,
                                           col_types = vroom::cols(.default = "c"))
+
            timeadjust <- stringr::str_extract(firsttimestamp[1,1],
-                                              pattern = "[:digit:]{4}$")
+                                              pattern = "[+-]?[:digit:]{4}$")
+
 
 
            timeadjustTime <- lubridate::hm(paste0(stringr::str_extract(timeadjust,
-                                                                      pattern = "^[:digit:]{2}"),
+                                                                      pattern = "(?<=[+-])[:digit:]{2}"),
                                                   ":",
                                                  stringr::str_extract(timeadjust,
                                                                       pattern = "[:digit:]{2}$")))
+
            timeadjustFactor <- as.numeric(timeadjustTime)/3600
-           data$trimmedData <- data$trimmedData |>
-             dplyr::mutate(hour = hour + timeadjustFactor)
+           #check if the timestamp factor is positive or negative
+           if(isTRUE(stringr::str_extract(timeadjust,
+                                   pattern = "^[+-]{1}")=="+")){
+             data$trimmedData <- data$trimmedData |>
+               dplyr::mutate(hour = hour + timeadjustFactor)
+           }
+           else{
+             data$trimmedData <- data$trimmedData |>
+               dplyr::mutate(hour = hour - timeadjustFactor)
+           }
          }
          )
       output$Table<-  shiny::renderUI({

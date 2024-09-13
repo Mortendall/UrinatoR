@@ -112,90 +112,99 @@ preprocessing <- function(id, data, parentSession){
       shiny::observeEvent(
         input$continue,
         {
-          data$longData <- dplyr::left_join(data$longData,
-                                            data$groupinfo,
-                                            by = c("Individual" = "CageID")) |>
-            dplyr::mutate(NormalizedValue = dplyr::case_when(
-              !is.na(CorrectedValue) ~ CorrectedValue / No.ofAnimals,
-              is.na(CorrectedValue) ~ NA
-            )) |>
-            dplyr::group_by(Individual) |>
-            dplyr::mutate(CumulativeNormalized = cumsum(ifelse(is.na(NormalizedValue),
-                                                               0,
-                                                               NormalizedValue)))
+          if(is.null(data$groupeddata)){
+            data$longData <- dplyr::left_join(data$longData,
+                                              data$groupinfo,
+                                              by = c("Individual" = "CageID")) |>
+              dplyr::mutate(NormalizedValue = dplyr::case_when(
+                !is.na(CorrectedValue) ~ CorrectedValue / No.ofAnimals,
+                is.na(CorrectedValue) ~ NA
+              )) |>
+              dplyr::group_by(Individual) |>
+              dplyr::mutate(CumulativeNormalized = cumsum(ifelse(is.na(NormalizedValue),
+                                                                 0,
+                                                                 NormalizedValue)))
 
 
 
 
-          #prepare grouped data for figure generation
-        data$groupeddata  <- data$longData |>
-          dplyr::group_by(Group, TimeElapsed) |>
-          dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
-                           sdRawdata = sd(Rawdata, na.rm = T),
-                           meanCorrectedValue = mean(CorrectedValue, na.rm = T),
-                           sdCorrectedValue = sd(CorrectedValue, na.rm = T),
-                           meanNormalized = mean(NormalizedValue, na.rm = T),
-                           sdNormalized = sd(NormalizedValue, na.rm = T),
-                           meanCumulativeNorm = mean(CumulativeNormalized, na.rm = T),
-                           sdCumulativeNorm = sd(CumulativeNormalized, na.rm = T )
-          )
+            #prepare grouped data for figure generation
+            data$groupeddata  <- data$longData |>
+              dplyr::group_by(Group, TimeElapsed) |>
+              dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
+                               sdRawdata = sd(Rawdata, na.rm = T),
+                               meanCorrectedValue = mean(CorrectedValue, na.rm = T),
+                               sdCorrectedValue = sd(CorrectedValue, na.rm = T),
+                               meanNormalized = mean(NormalizedValue, na.rm = T),
+                               sdNormalized = sd(NormalizedValue, na.rm = T),
+                               meanCumulativeNorm = mean(CumulativeNormalized, na.rm = T),
+                               sdCumulativeNorm = sd(CumulativeNormalized, na.rm = T )
+              )
 
-        #prepare data for hourly urination pr week
-        data$hourly <- data$longData |>
-          dplyr::mutate(week = (day - (day %% 7))/7) |>
-          dplyr::group_by(Individual, hour, week) |>
-          dplyr::summarise(
-            meanNormalized = mean(NormalizedValue,
-                                  na.rm = T),
-            n = dplyr::n()
-          )
+            #prepare data for hourly urination pr week
+            data$hourly <- data$longData |>
+              dplyr::mutate(week = (day - (day %% 7))/7) |>
+              dplyr::group_by(Individual, hour, week) |>
+              dplyr::summarise(
+                meanNormalized = mean(NormalizedValue,
+                                      na.rm = T),
+                n = dplyr::n()
+              )
 
-        #prepare data for circadian plots
-        data$circadiandata <- data$hourly |>
-          dplyr::group_by(Individual, hour)|>
-          dplyr::summarise(
-            meanNormalizedcircadian = mean(meanNormalized, na.rm = T),
-            semNormalized = sd(meanNormalized, na.rm = T),
-            n = dplyr::n()) |>
-          dplyr::mutate(ZT = dplyr::case_when(
-            hour >= 6 ~ hour - 6,
-            hour < 6 ~ hour + 18
-          ),
-          semNormalized = semNormalized/n)|>
-          dplyr::arrange(ZT)
+            #prepare data for circadian plots
+            data$circadiandata <- data$hourly |>
+              dplyr::group_by(Individual, hour)|>
+              dplyr::summarise(
+                meanNormalizedcircadian = mean(meanNormalized, na.rm = T),
+                semNormalized = sd(meanNormalized, na.rm = T),
+                n = dplyr::n()) |>
+              dplyr::mutate(ZT = dplyr::case_when(
+                hour >= 6 ~ hour - 6,
+                hour < 6 ~ hour + 18
+              ),
+              semNormalized = semNormalized/n)|>
+              dplyr::arrange(ZT)
 
-        #group circadian
-        data$circadiandatagroup <- data$hourly|>
-          dplyr::mutate(Group = stringr::str_extract(Individual,
-                                                     "[:graph:]+(?=_Box)")) |>
-          dplyr::group_by(Group, hour)|>
-          dplyr::summarise(
-            meanNormalizedGroup = mean(meanNormalized, na.rm = T),
-            semNormalizedGroup = sd(meanNormalized, na.rm = T),
-            n = dplyr::n())|>
-          dplyr::mutate(ZT = dplyr::case_when(
-            hour >= 6 ~ hour - 6,
-            hour < 6 ~ hour + 18
-          ),
-          semNormalizedGroup = semNormalizedGroup/n) |>
-          dplyr::arrange(ZT)
-
-
+            #group circadian
+            data$circadiandatagroup <- data$hourly|>
+              dplyr::mutate(Group = stringr::str_extract(Individual,
+                                                         "[:graph:]+(?=_Box)")) |>
+              dplyr::group_by(Group, hour)|>
+              dplyr::summarise(
+                meanNormalizedGroup = mean(meanNormalized, na.rm = T),
+                semNormalizedGroup = sd(meanNormalized, na.rm = T),
+                n = dplyr::n())|>
+              dplyr::mutate(ZT = dplyr::case_when(
+                hour >= 6 ~ hour - 6,
+                hour < 6 ~ hour + 18
+              ),
+              semNormalizedGroup = semNormalizedGroup/n) |>
+              dplyr::arrange(ZT)
 
 
 
 
-           # saveRDS(data$circadiandatagroup, here::here("Data/circadiangroup.rds"))
-           # saveRDS(data$circadiandata, here::here("Data/circadian.rds"))
-           # saveRDS(data$longData, here::here("Data/longData.rds"))
-           # saveRDS(data$groupeddata, here::here("Data/groupeddata.rds"))
-
-        #Update tabsets
 
 
-        shiny::updateTabsetPanel(session = parentSession,
-                                 inputId = "inTabset",
-                                 selected = "summaryFig")
+            # saveRDS(data$circadiandatagroup, here::here("Data/circadiangroup.rds"))
+            # saveRDS(data$circadiandata, here::here("Data/circadian.rds"))
+            # saveRDS(data$longData, here::here("Data/longData.rds"))
+            # saveRDS(data$groupeddata, here::here("Data/groupeddata.rds"))
+
+            #Update tabsets
+
+
+            shiny::updateTabsetPanel(session = parentSession,
+                                     inputId = "inTabset",
+                                     selected = "summaryFig")
+          }
+
+          else{
+            shinyWidgets::sendSweetAlert(title = "Pre-processing already done",
+                                         text = "Pre-processing has already been completed",
+                                         type = "warning")
+          }
+
       })
     }
   )
