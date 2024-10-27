@@ -1,17 +1,18 @@
 preprocessingUI <- function(id){
   ns <- shiny::NS(id)
-  shiny::fluidPage(
-    shiny::fluidRow(
-      shiny::column(4,
-                    shiny::uiOutput(outputId = ns("animalnumber"))),
-      shiny::column(8,
+  bslib::layout_columns(
+    col_widths = c(4,8),
+    shiny::column(12,
+                  bslib::card(
+                    shiny::uiOutput(outputId = ns("animalnumber")))),
+    shiny::column(12,
+                  bslib::card(
                     shiny::uiOutput(outputId = ns("select")),
                     shiny::h6("Confirm no. of animals pr. cage and press button to normalize and continue"),
                     shiny::actionButton(inputId = ns("continue"),
                                         label = "Continue to graphs",
                                         icon = shiny::icon("arrow-right"))
-                                       ))
-    )
+                  )))
 }
 
 preprocessing <- function(id, data, parentSession){

@@ -1,17 +1,17 @@
 downloadUI <- function(id){
   ns <- shiny::NS(id)
-  shiny::fluidPage(
-    shiny::fluidRow(
-      shiny::column(12,
-                    shiny::selectInput(inputId = ns("outputtype"),
-                                       choices = c("Individual",
-                                                   "Grouped"),
-                                       selected = "Individual",
-                                       label = "Select the data you want to download"),
-                    shiny::downloadButton(outputId = ns("downloadbutton"),
-                                          label = "Press to download your data as an  Excel file")
-                    )
-    )
+  bslib::layout_columns(
+    col_widths = c(2,8,2),
+    shiny::column(12),
+    shiny::column(12,
+                  bslib::card(shiny::selectInput(inputId = ns("outputtype"),
+                                     choices = c("Individual",
+                                                 "Grouped"),
+                                     selected = "Individual",
+                                     label = "Select the data you want to download"),
+                  shiny::downloadButton(outputId = ns("downloadbutton"),
+                                        label = "Press to download your data as an  Excel file"))
+                  )
   )
 }
 
