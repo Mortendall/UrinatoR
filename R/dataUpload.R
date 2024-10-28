@@ -1,28 +1,36 @@
 
 uploadUI <- function(id){
   ns <- shiny::NS(id)
-  shiny::fluidPage(
-    shiny::fluidRow(
-      shiny::column(12,
-                    shiny::h4("Upload a DVC file or load demo data"),
-                    shiny::selectInput(inputId = ns("seperator"),
-                                       label = "Select seperator in CSV",
-                                       choices = c(",", ";"),
-                                       selected = ";"),
-                    shiny::selectInput(inputId = ns("decimal"),
-                                       label = "Select regional decimal mark",
-                                       choices = c(",", "."),
-                                       selected = "."),
-                    shiny::fileInput(inputId = ns("fileUpload"),
-                                     label = "Upload a DVC file as csv - be sure to select correct decimal and seperator!",
-                                     buttonLabel = "Upload",
-                                     accept = ".csv"),
-                    shiny::uiOutput(outputId = ns("Table")),
-                    shiny::actionButton(inputId = ns("demodata"),
-                                        label = "Load demodata")
+  bslib::layout_columns(
+   col_widths =  c(6,6),
+    shiny::column(12,
+                  bslib::card(bslib::card_title("Step 1: Upload a DVC data file or load demo data"),
+                  shiny::selectInput(inputId = ns("seperator"),
+                                     label = "Select seperator in CSV",
+                                     choices = c(",", ";"),
+                                     selected = ";"),
+                  shiny::selectInput(inputId = ns("decimal"),
+                                     label = "Select regional decimal mark",
+                                     choices = c(",", "."),
+                                     selected = "."),
+                  shiny::fileInput(inputId = ns("fileUpload"),
+                                   label = "Upload a DVC file as csv - be sure to select correct decimal and seperator!",
+                                   buttonLabel = "Upload",
+                                   accept = ".csv"),
+                  shiny::uiOutput(outputId = ns("Table")),
+                  shiny::actionButton(inputId = ns("demodata"),
+                                      label = "Load demodata"))
+                  ),
+    shiny::column(12,
+                  bslib::card(
+                    bslib::card_title("Step 2: Upload an event file"),
+                    bslib::card_body(
+                      shiny::h6("Event file is necessary to remove cage changes from data file.
+                                This is only possible after you upload a data file."),
+                      shiny::uiOutput(ns("eventUI"))
                     )
-                    )
-  )
+                  ))
+                        )
 }
 
 upload <- function(id, data, parentSession){
@@ -108,10 +116,7 @@ upload <- function(id, data, parentSession){
       output$Table<-  shiny::renderUI({
         req(data$trimmedData)
         shiny::tagList(
-                    shiny::actionButton(inputId = ns("ProcessData"),
-                              label = "Process data",
-                              icon = shiny::icon("arrow-right")
-                              ),
+
                     shiny::textOutput(outputId = ns("groups"))
                     #,
                     #rhandsontable::rHandsontableOutput(outputId = ns("dataScreen"))
@@ -138,7 +143,43 @@ upload <- function(id, data, parentSession){
                                  selected = "summaryFig")
       }
       )
+      #####Event UI####
+      output$eventUI <- shiny::renderUI({
+        req(data$trimmedData)
+        shiny::tagList(
 
+          shiny::selectInput(inputId = ns("eventSeparator"),
+                             label = "Select separator for event file",
+                             choices =  c(",", ";"),
+                             selected = ";"),
+          shiny::selectInput(inputId = ns("eventDecimal"),
+                             label = "Select regional decimal mark",
+                             choices = c(",", "."),
+                             selected = "."),
+          shiny::fileInput(inputId = ns("eventUpload"),
+                           label = "Upload an event file as csv - be sure to select correct decimal and separator!",
+                           buttonLabel = "Upload",
+                           accept = ".csv"),
+          shiny::uiOutput(outputId = ns("processbutton"))
+          )
+
+      })
+
+      output$processbutton <- shiny::renderUI({
+        req(data$events)
+        req(data$trimmeddata)
+        shinyWidgets::actionBttn(
+          inputId = ns("ProcessData"),
+          label = "Process data",
+          icon = shiny::icon("arrow-right")
+        )
+      })
+
+      #####Add event data####
+
+
+
+      #####process data UI####
       #This code controls what happens when data process button is selected.
       #Data is processed and user is sent to next page
       shiny::observeEvent(input$ProcessData,{

@@ -1,30 +1,27 @@
 summaryFigUI <- function(id){
   ns <- shiny::NS(id)
-  shiny::fluidPage(
-    shiny::fluidRow(
-      shiny::column(width = 6,
+  shiny::tagList(
+    bslib::layout_columns(
+    col_widths = c(6,6),
+    shiny::column(12,
+                  bslib::card(
                     shiny::selectInput(inputId = ns("grouptoggle"),
-                                       label = "Plot by Group or Individual?",
-                                       choices = c("Individual", "Group"),
-                                       selected = "Group"),
+                                      label = "Plot by Group or Individual?",
+                                      choices = c("Individual", "Group"),
+                                      selected = "Group"),
                     shiny::selectInput(inputId = ns("plottoggle"),
                                        label = "Select plot to display",
                                        choices = c("Cumulative Urination Plot",
                                                    "Incremental Plot",
-                                                   "Raw Data Plot"))),
-      shiny::column(width = 6,
-                    shiny::h6("Press button to draw selected plot"),
+                                                   "Raw Data Plot")),
                     shiny::actionButton(inputId = ns("updateplot"),
-                                        label = "Draw!")
-      ))
-    ,
-    shiny::fluidRow(
-      shiny::column(width = 12,
-                    shiny::uiOutput(outputId = ns("selectedplot")
-                                    )
-                    )
-    )
-  )
+                                        label = "Press button to draw selected plot")
+                  )),
+    shiny::column(12,
+                  )),
+  bslib::layout_column_wrap(
+    shiny::uiOutput(outputId = ns("selectedplot")
+  )))
 }
 
 summary <- function(id, data, parentSession){

@@ -1,18 +1,18 @@
 circadianUI <- function(id){
   ns <- shiny::NS(id)
-  shiny::fluidPage(
-    shiny::fluidRow(
-      shiny::column(12,
-                    shiny::actionButton(inputId = ns("plotcircadian"),
-                                        label = "Plot circadian plot")
-                    ,
-                    shiny::selectInput(inputId = ns("grouptoggle"),
-                                       label = "Display as grouped or single cage?",
-                                       choices = c("Individual", "Group"),
-                                       selected = "Individual"),
-                    shiny::uiOutput(outputId = ns("circadiansummary"))
-                    )
-    )
+  bslib::layout_columns(col_widths = c(2,8,2),
+                        shiny::column(12),
+                        shiny::column(12,
+                                      bslib::card(shiny::actionButton(inputId = ns("plotcircadian"),
+                                                          label = "Plot circadian plot")
+                                      ,
+                                      shiny::selectInput(inputId = ns("grouptoggle"),
+                                                         label = "Display as grouped or single cage?",
+                                                         choices = c("Individual", "Group"),
+                                                         selected = "Individual"),
+                                      shiny::uiOutput(outputId = ns("circadiansummary")))),
+                        shiny::column(12)
+
   )
 }
 
