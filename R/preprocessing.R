@@ -4,7 +4,8 @@ preprocessingUI <- function(id){
     col_widths = c(4,8),
     shiny::column(12,
                   bslib::card(
-                    shiny::uiOutput(outputId = ns("animalnumber")))),
+                    shiny::uiOutput(outputId = ns("animalnumber"))
+                    )),
     shiny::column(12,
                   bslib::card(
                     shiny::uiOutput(outputId = ns("select")),
@@ -24,12 +25,12 @@ preprocessing <- function(id, data, parentSession){
       #####Select individual to display####
       #Code determining what is rendered when data is loaded in
       output$select <- shiny::renderUI({
-        req(data$longData)
+        req(data$joinedData)
         shiny::tagList(
           plotly::plotlyOutput(outputId = ns("excluded")),
           shiny::selectInput(inputId = ns("individuals"),
                              label = "Select a subject to visualize",
-                             choices = unique(data$longData$Individual)
+                             choices = unique(data$joinedData$ID)
                              )
           )
       })
@@ -37,7 +38,7 @@ preprocessing <- function(id, data, parentSession){
       #####Table for no. of animals pr cage input####
       #code for the table to change number of mice pr. cage
       output$animalnumber <- shiny::renderUI({
-        req(data$longData)
+        req(data$joinedData)
         shiny::tagList(
           rhandsontable::rHandsontableOutput(outputId = ns("animaltable")),
           shiny::actionButton(inputId = ns("savedata"),
@@ -48,9 +49,10 @@ preprocessing <- function(id, data, parentSession){
       #####Exclusion plot####
       #Plot showing the raw data with dashed lines for exclusions
       output$excluded <- plotly::renderPlotly({
-        req(data$longData)
-        p <- plotly::plot_ly(data = subset(data$longData,
-                                      Individual == input$individuals),
+        req(data$joinedData)
+        p <- plotly::plot_ly(data = subset(data$joinedData,
+                                      ID == input$individuals &
+                                      included == TRUE),
                         x = ~TimeElapsed,
                         y = ~Rawdata,
                         type = "scatter",
@@ -59,8 +61,8 @@ preprocessing <- function(id, data, parentSession){
           plotly::layout(title = "Bedding Status Index",
                          yaxis = list(title = "Raw DVC Signal"),
                          xaxis = list(title = "Elapsed Time (hours)"))
-        exclusions <- data$longData |>
-          dplyr::filter(Include == 1 & Individual == input$individuals) |>
+        exclusions <- data$joinedData |>
+          dplyr::filter(event == "INSERTED" & ID == input$individuals) |>
           dplyr::pull(TimeElapsed)
 
         for(i in 1:length(exclusions))
@@ -114,14 +116,14 @@ preprocessing <- function(id, data, parentSession){
         input$continue,
         {
           if(is.null(data$groupeddata)){
-            data$longData <- dplyr::left_join(data$longData,
+            data$joinedData <- dplyr::left_join(data$joinedData,
                                               data$groupinfo,
-                                              by = c("Individual" = "CageID")) |>
+                                              by = c("ID" = "CageID")) |>
               dplyr::mutate(NormalizedValue = dplyr::case_when(
                 !is.na(CorrectedValue) ~ CorrectedValue / No.ofAnimals,
                 is.na(CorrectedValue) ~ NA
               )) |>
-              dplyr::group_by(Individual) |>
+              dplyr::group_by(ID) |>
               dplyr::mutate(CumulativeNormalized = cumsum(ifelse(is.na(NormalizedValue),
                                                                  0,
                                                                  NormalizedValue)))
@@ -130,7 +132,7 @@ preprocessing <- function(id, data, parentSession){
 
 
             #prepare grouped data for figure generation
-            data$groupeddata  <- data$longData |>
+            data$groupeddata  <- data$joinedData |>
               dplyr::group_by(Group, TimeElapsed) |>
               dplyr::summarise(meanRawdata = mean(Rawdata, na.rm = T),
                                sdRawdata = sd(Rawdata, na.rm = T),
@@ -143,9 +145,9 @@ preprocessing <- function(id, data, parentSession){
               )
 
             #prepare data for hourly urination pr week
-            data$hourly <- data$longData |>
+            data$hourly <- data$joinedData |>
               dplyr::mutate(week = (day - (day %% 7))/7) |>
-              dplyr::group_by(Individual, hour, week) |>
+              dplyr::group_by(ID, hour, week) |>
               dplyr::summarise(
                 meanNormalized = mean(NormalizedValue,
                                       na.rm = T),
@@ -154,7 +156,7 @@ preprocessing <- function(id, data, parentSession){
 
             #prepare data for circadian plots
             data$circadiandata <- data$hourly |>
-              dplyr::group_by(Individual, hour)|>
+              dplyr::group_by(ID, hour)|>
               dplyr::summarise(
                 meanNormalizedcircadian = mean(meanNormalized, na.rm = T),
                 semNormalized = sd(meanNormalized, na.rm = T),
@@ -167,9 +169,13 @@ preprocessing <- function(id, data, parentSession){
               dplyr::arrange(ZT)
 
             #group circadian
-            data$circadiandatagroup <- data$hourly|>
-              dplyr::mutate(Group = stringr::str_extract(Individual,
-                                                         "[:graph:]+(?=_Box)")) |>
+            group_key <- data$joinedData |>
+              duckplyr::select(ID, Group) |>
+              duckplyr::distinct(ID, .keep_all = T)
+
+            data$circadiandatagroup <- duckplyr::left_join(data$hourly, group_key, by = c("ID"="ID"))|>
+              # dplyr::mutate(Group = stringr::str_extract(ID,
+              #                                            "[:graph:]+(?=_Box)")) |>
               dplyr::group_by(Group, hour)|>
               dplyr::summarise(
                 meanNormalizedGroup = mean(meanNormalized, na.rm = T),
@@ -189,7 +195,7 @@ preprocessing <- function(id, data, parentSession){
 
             # saveRDS(data$circadiandatagroup, here::here("Data/circadiangroup.rds"))
             # saveRDS(data$circadiandata, here::here("Data/circadian.rds"))
-            # saveRDS(data$longData, here::here("Data/longData.rds"))
+            # saveRDS(data$joinedData, here::here("Data/longData.rds"))
             # saveRDS(data$groupeddata, here::here("Data/groupeddata.rds"))
 
             #Update tabsets

@@ -10,7 +10,9 @@ downloadUI <- function(id){
                                      selected = "Individual",
                                      label = "Select the data you want to download"),
                   shiny::downloadButton(outputId = ns("downloadbutton"),
-                                        label = "Press to download your data as an  Excel file"))
+                                        label = "Press to download your data as an  Excel file")),
+                  bslib::card(shiny::downloadButton(outputId = ns("sessionDownload"),
+                                                    label = "Download your processed data as RDS object"))
                   )
   )
 }
@@ -37,28 +39,31 @@ download <-function(id, data, parentSession){
                                Incremental = NA,
                                Circadian = NA)
           if(input$outputtype == "Individual"){
-            urinatordata$Rawdata <- data$longData |>
-              dplyr::select(Individual, hour, TimeElapsed, Rawdata) |>
-              tidyr::pivot_wider(names_from = Individual,
-                                 values_from = Rawdata)
-            urinatordata$Cumulative <- data$longData |>
-              dplyr::select(Individual, hour, TimeElapsed, CumulativeNormalized) |>
-              tidyr::pivot_wider(names_from = Individual,
-                                 values_from = CumulativeNormalized)
-            urinatordata$Incremental <-  data$longData |>
-              dplyr::select(Individual, hour, TimeElapsed, NormalizedValue) |>
-              tidyr::pivot_wider(names_from = Individual,
-                                 values_from = NormalizedValue)
+            urinatordata$Rawdata <- data$joinedData |>
+              dplyr::select(ID, hour, TimeElapsed, Rawdata,event)
+            # |>
+            #   tidyr::pivot_wider(names_from = ID,
+            #                      values_from = Rawdata)
+            urinatordata$Cumulative <- data$joinedData |>
+              dplyr::select(ID, hour, TimeElapsed, CumulativeNormalized, event)
+            # |>
+            #   tidyr::pivot_wider(names_from = ID,
+            #                      values_from = CumulativeNormalized)
+            urinatordata$Incremental <-  data$joinedData |>
+              dplyr::select(ID, hour, TimeElapsed, NormalizedValue, event)
+            # |>
+            #   tidyr::pivot_wider(names_from = ID,
+            #                      values_from = NormalizedValue)
              circadian1 <- data$circadiandata |>
-              dplyr::select(Individual, ZT, meanNormalizedcircadian) |>
-              tidyr::pivot_wider(names_from = Individual,
-                                 names_prefix = "Mean_",
-                                 values_from = meanNormalizedcircadian)
+              dplyr::select(ID, ZT, meanNormalizedcircadian) |>
+               tidyr::pivot_wider(names_from = ID,
+                                  names_prefix = "Mean_",
+                                  values_from = meanNormalizedcircadian)
              circadian2 <- data$circadiandata |>
-               dplyr::select(Individual, ZT, semNormalized) |>
-               tidyr::pivot_wider(names_from = Individual,
-                                  names_prefix = "SEM_",
-                                  values_from = semNormalized)
+               dplyr::select(ID, ZT, semNormalized)|>
+                tidyr::pivot_wider(names_from = ID,
+                                   names_prefix = "SEM_",
+                                   values_from = semNormalized)
             urinatordata$Circadian <- dplyr::left_join(circadian1,
                                                        circadian2,
                                                        by =c("ZT"="ZT"))
@@ -97,6 +102,27 @@ download <-function(id, data, parentSession){
 
           openxlsx::write.xlsx(urinatordata, file = file)
         })
+
+      output$sessionDownload <- shiny::downloadHandler(
+        filename = function(){
+          paste0(Sys.Date(),"_urinatordata.rds")
+        },
+
+        content = function(file){
+          export_data <- list(joinedData = data$joinedData,
+                              circadiandatagroup = data$circadiandatagroup,
+                              circadiandata = data$circadiandata,
+                              events = data$events,
+                              groupeddata = data$groupeddata,
+                              groupinfo = data$groupinfo,
+                              groups = data$groups,
+                              hourly = data$hourly,
+                              rawData = data$rawData,
+                              trimmedData = data$trimmedData)
+
+          readr::write_rds(export_data, file= file)
+        }
+      )
 
       })
     }

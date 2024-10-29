@@ -35,11 +35,11 @@ summary <- function(id, data, parentSession){
 
         #Rawdata for individuals
           output$rawdataPlotIndividual <- plotly::renderPlotly({
-            req(data$longData)
-            plotly::plot_ly(data = data$longData,
+            req(data$joinedData)
+            plotly::plot_ly(data = data$joinedData,
                             x = ~TimeElapsed,
                             y = ~Rawdata,
-                            color = ~Individual,
+                            color = ~ID,
                             type = "scatter",
                             mode = "lines"
             ) |>
@@ -50,11 +50,11 @@ summary <- function(id, data, parentSession){
 
           #I
           output$summaryPlotIndividual <- plotly::renderPlotly({
-            req(data$longData)
-            plotly::plot_ly(data = data$longData,
+            req(data$joinedData)
+            plotly::plot_ly(data = data$joinedData,
                             x = ~TimeElapsed,
                             y = ~CumulativeNormalized,
-                            color = ~Individual,
+                            color = ~ID,
                             type = "scatter",
                             mode = "lines"
             ) |>
@@ -65,11 +65,11 @@ summary <- function(id, data, parentSession){
 
           #Incremental Plot
           output$incrementalPlotIndividual <- plotly::renderPlotly({
-            req(data$longData)
-            plotly::plot_ly(data = data$longData,
+            req(data$joinedData)
+            plotly::plot_ly(data = data$joinedData,
                             x = ~TimeElapsed,
                             y = ~NormalizedValue,
-                            color = ~Individual,
+                            color = ~ID,
                             type = "scatter",
                             mode = "lines"
             ) |>

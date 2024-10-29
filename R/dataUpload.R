@@ -4,7 +4,8 @@ uploadUI <- function(id){
   bslib::layout_columns(
    col_widths =  c(6,6),
     shiny::column(12,
-                  bslib::card(bslib::card_title("Step 1: Upload a DVC data file or load demo data"),
+                  shiny::tagList(
+                    bslib::card(bslib::card_title("Step 1A: Upload a DVC data file or load demo data"),
                   shiny::selectInput(inputId = ns("seperator"),
                                      label = "Select seperator in CSV",
                                      choices = c(",", ";"),
@@ -17,9 +18,15 @@ uploadUI <- function(id){
                                    label = "Upload a DVC file as csv - be sure to select correct decimal and seperator!",
                                    buttonLabel = "Upload",
                                    accept = ".csv"),
-                  shiny::uiOutput(outputId = ns("Table")),
-                  shiny::actionButton(inputId = ns("demodata"),
-                                      label = "Load demodata"))
+                  shiny::uiOutput(outputId = ns("Table"))),
+                  bslib::card(bslib::card_title("Step 1B: Continue previous session"),
+                              shiny::fileInput(inputId = ns("continue_session"),
+                                               label = "Upload an RDS object",
+                                               accept = ".rds")),
+                  bslib::card(bslib::card_title("Step 1C: Load demo data"),
+                              shiny::actionButton(inputId = ns("demodata"),
+                                                  label = "Load demodata")
+                              ))
                   ),
     shiny::column(12,
                   bslib::card(
@@ -70,10 +77,18 @@ upload <- function(id, data, parentSession){
 
       #####Load demo data####
       shiny::observeEvent(input$demodata,{
-        data$longData <- readRDS(here::here("Data/longData.rds"))
-        data$circadiandata <- readRDS(here::here("Data/circadian.rds"))
-        data$groupeddata <- readRDS(here::here("Data/groupeddata.rds"))
-        data$circadiandatagroup <- readRDS(here::here("Data/circadiangroup.rds"))
+        file_content <- readRDS(here::here("Data/2029-10-29_urinatordata.rds"))
+
+        data$joinedData <- file_content$joinedData
+        data$circadiandatagroup <- file_content$circadiandatagroup
+        data$circadiandata <- file_content$circadiandata
+        data$events <- file_content$events
+        data$groupeddata <- file_content$groupeddata
+        data$groupinfo <- file_content$groupinfo
+        data$groups <- file_content$groups
+        data$hourly <- file_content$hourly
+        data$rawData <- file_content$rawData
+        data$trimmedData <- file_content$trimmedData
         shiny::updateTabsetPanel(session = parentSession,
                                  inputId = "inTabset",
                                  selected = "summaryFig")
@@ -96,6 +111,12 @@ upload <- function(id, data, parentSession){
                            label = "Upload an event file as csv - be sure to select correct decimal and separator!",
                            buttonLabel = "Upload",
                            accept = ".csv"),
+          shiny::numericInput(inputId = ns("windowsetter"),
+                              label = "set a range in minutes for how many data points around events that will be excluded",
+                              value = 20),
+          shiny::numericInput(inputId = ns("datares"),
+                              label = "Resolution of data",
+                              value = 10),
           shiny::uiOutput(outputId = ns("processbutton"))
           )
 
@@ -103,7 +124,7 @@ upload <- function(id, data, parentSession){
 
       output$processbutton <- shiny::renderUI({
         req(data$events)
-        req(data$trimmeddata)
+        req(data$trimmedData)
         shinyWidgets::actionBttn(
           inputId = ns("ProcessData"),
           label = "Process data",
@@ -123,6 +144,24 @@ upload <- function(id, data, parentSession){
       #This code controls what happens when data process button is selected.
       #Data is processed and user is sent to next page
       shiny::observeEvent(input$ProcessData,{
+        progress <- shiny::Progress$new()
+        on.exit(progress$close())
+        progress$set(message = "Processing data - this can take a while",
+                     value  = 1/3)
+        n <- 3
+        data$joinedData <- join_event_data(data$trimmedData,
+                                            data$events)
+
+
+        progress$inc(1/n, detail = "Excluding data based on event window")
+        data$joinedData <- exclude_cage_changes(data$joinedData,
+                                                input$windowsetter,
+                                                input$datares)
+
+        data$joinedData <-data$joinedData |>
+          purrr::imap_dfr(~ duckplyr::mutate(.x, ID = .y))
+
+        progress$inc(1/n, detail = "Add groups")
         #prepare data in long format for plotting
 
         # TimeZero <- data$trimmedData$relativeTime[2]/3600
@@ -170,12 +209,14 @@ upload <- function(id, data, parentSession){
 
 
         #function to add group based on ID
-        testdataLong$Group <- NA
-        testdataLong <- purrr::map_dfr(data$groups,
+
+        data$joinedData$Group <- NA
+
+        data$joinedData <- purrr::map_dfr(data$groups,
                                                ~ dplyr::mutate(
-                                                 testdataLong,
+                                                 data$joinedData,
                                                  Group = dplyr::case_when(
-                                                   stringr::str_detect(Individual, .x) == TRUE ~ .x,
+                                                   stringr::str_detect(ID, .x) == TRUE ~ .x,
                                                    TRUE ~ as.character(Group)
                                                  )
                                                )
@@ -183,17 +224,41 @@ upload <- function(id, data, parentSession){
           dplyr::filter(!is.na(Group)) |>
           dplyr::arrange(TimeElapsed)
 
-        data$longData <- testdataLong
+
 
         #prepare group data
-        data$groupinfo <- data.frame("CageID"= unique(data$longData$Individual),
+        data$groupinfo <- data.frame("CageID"= unique(data$joinedData$ID),
                                      "No.ofAnimals" = 1)
+
+
 
         #switch to next tab
         shiny::updateTabsetPanel(session = parentSession,
                                  inputId = "inTabset",
                                  selected = "preprocess")
 
+      })
+
+      shiny::observeEvent(input$continue_session,{
+        ext <- tools::file_ext(input$continue_session$datapath)
+        req(input$continue_session)
+        validate(need(ext == "rds", "Please upload an rds file"))
+
+        file_content <- readr::read_rds(input$continue_session$datapath)
+          data$joinedData <- file_content$joinedData
+          data$circadiandatagroup <- file_content$circadiandatagroup
+          data$circadiandata <- file_content$circadiandata
+          data$events <- file_content$events
+          data$groupeddata <- file_content$groupeddata
+          data$groupinfo <- file_content$groupinfo
+          data$groups <- file_content$groups
+          data$hourly <- file_content$hourly
+          data$rawData <- file_content$rawData
+          data$trimmedData <- file_content$trimmedData
+
+          shiny::updateTabsetPanel(session = parentSession,
+                                   inputId = "inTabset",
+                                   selected = "summaryFig")
       })
 
       })

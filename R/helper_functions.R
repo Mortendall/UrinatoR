@@ -142,7 +142,16 @@ load_event_file <- function(event_file, separator, decimal){
                                locale = vroom::locale(decimal_mark = decimal)
   )
 
-  eventfile_trimmed <- timestamp_corrector(event_data,
+  if(length(event_data)==1){
+    shinyWidgets::sendSweetAlert(
+      type = "error",
+      title = "Only one column detected",
+      text = "Did you assign the right separator?"
+    )
+  }
+
+  else{
+    eventfile_trimmed <- timestamp_corrector(event_data,
                                            event_file,
                                            "event")
 
@@ -167,6 +176,7 @@ load_event_file <- function(event_file, separator, decimal){
   eventfile_trimmed_split <- purrr::set_names(eventfile_trimmed_split, group_name)
 
   return(eventfile_trimmed_split)
+  }
 
 }
 
@@ -180,11 +190,11 @@ load_event_file <- function(event_file, separator, decimal){
 
 timestamp_corrector <- function(input_data, input_file, file_type){
   if(file_type == "event"){
-    headername <- stringr::str_subset(colnames(event_file),
+    headername <- stringr::str_subset(colnames(input_data),
                                       pattern = "timestamp")[1]
   }
   else if (file_type == "data"){
-    headername <- stringr::str_subset(colnames(rawData),
+    headername <- stringr::str_subset(colnames(input_data),
                                       pattern = "_TIMESTAMP$")[1]
   }
   else{
@@ -194,7 +204,7 @@ timestamp_corrector <- function(input_data, input_file, file_type){
   #reload data column and extract time correction
   firsttimestamp <- vroom::vroom(input_file$datapath,
                                  show_col_types = F,
-                                 col_select = headername,
+                                 col_select = tidyselect::all_of(headername),
                                  col_types = vroom::cols(.default = "c"))
 
   timeadjust <- stringr::str_extract(firsttimestamp[1,1],
@@ -242,5 +252,128 @@ timestamp_corrector <- function(input_data, input_file, file_type){
   else{
     return(trimmed_data)
   }
+
+}
+
+#' Join event and data file
+#'
+#' @param data_file a list with data frame containing the columns ID and
+#' duration (lubridate period)
+#' @param event_file a list of data frames with the columns ID, duration and event
+#'
+#' @return a list of joined data frames where events are tagged
+
+join_event_data <- function(data_file, event_file){
+
+  #investigate if any data frames have no events
+  if(length(data_file)!=length(event_file)){
+    missing_files <- !names(data_file)%in% names(event_file)
+    joined_data_missing <- data_file[missing_files]
+
+    #create an empty column of events
+    joined_data_missing <- purrr::map(.x  = joined_data_missing,
+                                      ~duckplyr::mutate(.x,
+                                                        duration = as.numeric(duration),
+                                                        event = NA,
+                                                        duration = lubridate::seconds_to_period(duration)))
+  }
+  else{
+    joined_data_missing <- NULL
+  }
+  #turn lubridate to numeric, as periods cause errors
+  joined_data <- data_file[names(event_file)] |>
+    purrr::map(~duckplyr::mutate(.x,
+                                 duration = as.numeric(duration)))
+  joined_event <- purrr::map(event_file,
+                             ~duckplyr::mutate(.x,
+                                               duration = as.numeric(duration)
+                             ) |>
+                               duckplyr::select(ID, duration, event))
+
+  #calculate the window between the data points in the joined_data
+  time_factor <- as.numeric(joined_data[[1]]$duration[2]-joined_data[[1]]$duration[1])
+
+  #join the matching data frames to the best match. remove extra IDs and
+  #convert durations back
+  joined_data <- purrr::map2(.x = joined_data,
+                             .y = joined_event,
+                             ~fuzzyjoin::fuzzy_left_join(
+                               .x, .y,
+                               by = c("ID"="ID", "duration"="duration"),
+                               match_fun = list(`==`,
+                                                function(x,y) abs(x-y)<=time_factor/2)
+                             ) |>
+                               duckplyr::select(-duration.y,
+                                                -ID.y) |>
+                               duckplyr::rename(ID = ID.x,
+                                                duration = duration.x) |>
+                               duckplyr::mutate(duration = lubridate::seconds_to_period(duration)))
+
+  #join the missing data to the main dataset
+  if(!is.null(joined_data_missing)){
+    joined_data <- append(joined_data, joined_data_missing)
+  }
+  #return the joined data
+  return(joined_data)
+}
+
+#' exclude data from cage changed
+#'
+#' @param joined_data list of data frames with
+#' @param exclusion_window
+#' @param data_resolution resolution of data in minutes
+#'
+#' @return
+#' @export
+#'
+#' @examples
+exclude_cage_changes <- function(joined_data,
+                                 exclusion_window,
+                                 data_resolution){
+  #calculate exclusion window in seconds
+  time_correction <- exclusion_window*60
+
+
+  #calculate how many rows must be excluded pr. event
+  row_correction <- round(time_correction/(data_resolution*60),digits = 0)
+
+  joined_data_flagged <- purrr::map(joined_data,
+                                    #change lubridate to seconds
+                                    ~duckplyr::mutate(.x, duration = as.numeric(duration),
+                                                      #make row_id and flag events
+                                                      row_id  = dplyr::row_number(),
+                                                      included_before = duckplyr::if_else(
+                                                        !is.na(event), row_id, NA),
+                                                      included_after = duckplyr::if_else(
+                                                        !is.na(event), row_id, NA)
+                                    ) |>
+                                      #fill included with presence of event
+                                      tidyr::fill(
+                                        included_before,.direction = "up") |>
+                                      tidyr::fill(
+                                        included_after,.direction = "down") |>
+                                      #check distance to nearest event. FALSE if close to threshold
+                                      duckplyr::mutate(
+                                        included_before = duckplyr::if_else(
+                                        abs(row_id - included_before) >row_correction, TRUE, FALSE),
+                                        included_after = duckplyr::if_else(
+                                          abs(row_id - included_after) >row_correction, TRUE, FALSE),
+                                        included = duckplyr::case_when(
+                                          included_before== FALSE ~ FALSE,
+                                          included_after == FALSE ~ FALSE,
+                                          .default = TRUE
+                                        ),
+                                        #calculate the corrected value based on exclusions
+                                        CorrectedValue = dplyr::case_when(
+                                                             included == TRUE ~ Value,
+                                                             included == FALSE ~ NA
+                                                           ))
+                                    |>
+                                      #discard row_ID and re-calculate period
+                                      duckplyr::select(-row_id, -included_before, -included_after) |>
+                                      duckplyr::mutate(duration  =lubridate::seconds_to_period(duration))
+
+
+  )
 
 }

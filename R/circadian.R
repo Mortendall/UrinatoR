@@ -33,7 +33,7 @@ circadian <- function(id, data, parentSession){
           plotly::plot_ly(data = data$circadiandata,
                           x = ~ZT,
                           y = ~meanNormalizedcircadian,
-                          color = ~Individual,
+                          color = ~ID,
                           type = "scatter",
                           mode = "lines"
                           ,
