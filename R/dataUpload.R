@@ -77,7 +77,7 @@ upload <- function(id, data, parentSession){
 
       #####Load demo data####
       shiny::observeEvent(input$demodata,{
-        file_content <- readRDS(here::here("Data/2029-10-29_urinatordata.rds"))
+        file_content <- readRDS(here::here("Data/2024-10-29_urinatordata.rds"))
 
         data$joinedData <- file_content$joinedData
         data$circadiandatagroup <- file_content$circadiandatagroup
@@ -211,12 +211,13 @@ upload <- function(id, data, parentSession){
         #function to add group based on ID
 
         data$joinedData$Group <- NA
-
-        data$joinedData <- purrr::map_dfr(data$groups,
+        group_info_strings <- unlist(purrr::map(data$groups,
+                                                ~paste0("^",.x, "_")))
+        data$joinedData <- purrr::map2_dfr(group_info_strings, data$groups,
                                                ~ dplyr::mutate(
                                                  data$joinedData,
                                                  Group = dplyr::case_when(
-                                                   stringr::str_detect(ID, .x) == TRUE ~ .x,
+                                                   stringr::str_detect(ID, .x) == TRUE ~ .y,
                                                    TRUE ~ as.character(Group)
                                                  )
                                                )

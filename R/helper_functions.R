@@ -48,12 +48,14 @@ process_data <- function(raw_data, file, group_info){
   #determine timezero time point
   TimeZero <- raw_data$relativeTime[2]/3600
 
+
   #remove summary stat columns
   trimmed_data <- raw_data |>
     dplyr::select(!tidyselect::ends_with(c("QRT",
                                            "AVG",
                                            "SEM",
                                            "SAMPLES")))
+
   #collect and correct time stamp
 
   trimmed_data <- timestamp_corrector(trimmed_data,
@@ -92,11 +94,15 @@ process_data <- function(raw_data, file, group_info){
 
   #add group info
   trimmed_data$Group <- NA
-  trimmed_data <- purrr::map_dfr(group_info,
+  group_info_strings <- unlist(purrr::map(group_info,
+                                   ~paste0("^",.x, "_")))
+
+  trimmed_data <- purrr::map2_dfr(group_info_strings,
+                                  group_info,
                                  ~ dplyr::mutate(
                                    trimmed_data,
                                    Group = dplyr::case_when(
-                                     stringr::str_detect(ID, .x) == TRUE ~ .x,
+                                     stringr::str_detect(ID, .x) == TRUE ~ .y,
                                      TRUE ~ as.character(Group)
                                    )
                                  )
@@ -250,7 +256,7 @@ timestamp_corrector <- function(input_data, input_file, file_type){
   }
 
   else{
-    return(trimmed_data)
+    return(input_data)
   }
 
 }
