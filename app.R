@@ -15,38 +15,45 @@ options(shiny.maxRequestSize = 500*1024^2)
 
 
 
-ui <- shiny::fluidPage(
-  theme = bslib::bs_theme(version = 5,
-                          bootswatch = "united"),
-  shiny::titlePanel("UrinatoR: a tool for visualizing mouse urine data from DVC"),
-  shiny::tabsetPanel(type = "tabs",
+ui <-
+  bslib::page_navbar(title = "UrinatoR: a tool for visualizing mouse urine data from DVC",
                      id = "inTabset",
-                     shiny::tabPanel(title = "Data Upload",
+                     theme = bslib::bs_theme(version = 5,
+                                              bootswatch = "united"),
+                     bslib::nav_panel(title = "Welcome",
+                                     welcomeui("welcome"),
+                                     value = "welcomePage"),
+                     bslib::nav_panel(title = "Data Upload",
                                      uploadUI("upload"),
                                      value = "uploadPage"),
-                     shiny::tabPanel(title = "Preprocessing",
+                     bslib::nav_panel(title = "Preprocessing",
                                      preprocessingUI("preprocess"),
                                      value = "preprocess"),
-                     shiny::tabPanel(title = "Summary figure",
+                     bslib::nav_panel(title = "Summary figure",
                                      summaryFigUI("summary"),
                                      value = "summaryFig"),
-                     shiny::tabPanel(title = "Circadian plot",
+                     bslib::nav_panel(title = "Circadian plot",
                                      circadianUI("circadian"),
                                      value = "circadian"),
-                     shiny::tabPanel(title = "Download Data",
+                     bslib::nav_panel(title = "Download Data",
                                      downloadUI("download"),
-                                     value = "download")
-                     )
+                                     value = "download"),
+                     bslib::nav_panel(title = "About UrinatoR",
+                                     aboutui("about"),
+                                     value = "aboutpage")
+
 )
 
 server <-function(input, output, session){
   dataSheet <- shiny::reactiveValues()
   parentSession <- session
+  welcome("welcome",dataSheet, parentSession)
   upload("upload",dataSheet, parentSession)
   preprocessing("preprocess", dataSheet, parentSession)
   summary("summary", dataSheet, parentSession)
   circadian("circadian",dataSheet,parentSession)
   download("download", dataSheet, parentSession)
+  about("about",dataSheet, parentSession)
 }
 
 shinyApp(ui = ui, server = server)

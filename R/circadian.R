@@ -10,6 +10,7 @@ circadianUI <- function(id){
                                                          label = "Display as grouped or single cage?",
                                                          choices = c("Individual", "Group"),
                                                          selected = "Individual"),
+                                      #shiny::numericInput(inputId = ns("lightphase start")),
                                       shiny::uiOutput(outputId = ns("circadiansummary")))),
                         shiny::column(12)
 
@@ -43,7 +44,9 @@ circadian <- function(id, data, parentSession){
           ) |>
             plotly::layout(title = "Circadian Plot of Incremental Data",
                            yaxis = list(title = "Incremental Signal Increase"),
-                           xaxis = list(title = "Time"),
+                           xaxis = list(title = "ZT",
+                                        dtick = 4,
+                                        range = c(0,23)),
                            shapes = list(
                              list(type = "rect",
                                   fillcolor = "black",
@@ -72,7 +75,9 @@ circadian <- function(id, data, parentSession){
           ) |>
             plotly::layout(title = "Circadian Plot of Incremental Data",
                            yaxis = list(title = "Incremental Signal Increase"),
-                           xaxis = list(title = "Time"),
+                           xaxis = list(title = "ZT",
+                                        dtick = 4,
+                                        range = c(0,23)),
                            shapes = list(
                              list(type = "rect",
                                   fillcolor = "black",

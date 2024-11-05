@@ -37,7 +37,7 @@ summary <- function(id, data, parentSession){
           output$rawdataPlotIndividual <- plotly::renderPlotly({
             req(data$joinedData)
             plotly::plot_ly(data = data$joinedData,
-                            x = ~TimeElapsed,
+                            x = ~(TimeElapsed/24),
                             y = ~Rawdata,
                             color = ~ID,
                             type = "scatter",
@@ -45,14 +45,14 @@ summary <- function(id, data, parentSession){
             ) |>
               plotly::layout(title = "Bedding Status Index",
                              yaxis = list(title = "Raw DVC Signal"),
-                             xaxis = list(title = "Elapsed Time (hours)"))
+                             xaxis = list(title = "Elapsed Time (days)"))
           })
 
           #I
           output$summaryPlotIndividual <- plotly::renderPlotly({
             req(data$joinedData)
             plotly::plot_ly(data = data$joinedData,
-                            x = ~TimeElapsed,
+                            x = ~(TimeElapsed/24),
                             y = ~CumulativeNormalized,
                             color = ~ID,
                             type = "scatter",
@@ -60,14 +60,14 @@ summary <- function(id, data, parentSession){
             ) |>
               plotly::layout(title = "Cumulative Urination pr. mouse",
                              yaxis = list(title = "Accumulated Signal"),
-                             xaxis = list(title = "Elapsed Time (hours)"))
+                             xaxis = list(title = "Elapsed Time (days)"))
           })
 
           #Incremental Plot
           output$incrementalPlotIndividual <- plotly::renderPlotly({
             req(data$joinedData)
             plotly::plot_ly(data = data$joinedData,
-                            x = ~TimeElapsed,
+                            x = ~(TimeElapsed/24),
                             y = ~NormalizedValue,
                             color = ~ID,
                             type = "scatter",
@@ -75,7 +75,7 @@ summary <- function(id, data, parentSession){
             ) |>
               plotly::layout(title = "Incremental Change w. Bedding Change Removed",
                              yaxis = list(title = "Incremental Signal pr. mouse"),
-                             xaxis = list(title = "Elapsed Time (hours)"))
+                             xaxis = list(title = "Elapsed Time (days)"))
           })
 
           #Same figures but grouped data
@@ -83,7 +83,7 @@ summary <- function(id, data, parentSession){
           output$rawdataPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
-                            x = ~TimeElapsed,
+                            x = ~(TimeElapsed/24),
                             y = ~meanRawdata,
                             color = ~Group,
                             type = "scatter",
@@ -96,14 +96,14 @@ summary <- function(id, data, parentSession){
             ) |>
               plotly::layout(title = "Bedding Status Index",
                              yaxis = list(title = "Raw DVC Signal"),
-                             xaxis = list(title = "Elapsed Time (hours)"))
+                             xaxis = list(title = "Elapsed Time (days)"))
           })
 
           #Grouped cumulative urination
           output$summaryPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
-                            x = ~TimeElapsed,
+                            x = ~(TimeElapsed/24),
                             y = ~meanCumulativeNorm,
                             color = ~Group,
                             type = "scatter",
@@ -111,14 +111,14 @@ summary <- function(id, data, parentSession){
             ) |>
               plotly::layout(title = "Average Cumulative Urination pr. Mouse",
                              yaxis = list(title = "Accumulated Signal"),
-                             xaxis = list(title = "Elapsed Time (hours)"))
+                             xaxis = list(title = "Elapsed Time (days)"))
           })
 
           #Incremental plot
           output$incrementalPlotGroup <- plotly::renderPlotly({
             req(data$groupeddata)
             plotly::plot_ly(data = data$groupeddata,
-                            x = ~TimeElapsed,
+                            x = ~(TimeElapsed/24),
                             y = ~meanNormalized,
                             color = ~Group,
                             type = "scatter",

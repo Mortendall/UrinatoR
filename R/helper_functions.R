@@ -57,17 +57,19 @@ process_data <- function(raw_data, file, group_info){
                                            "SAMPLES")))
 
   #collect and correct time stamp
+  #time stamp correction is not necessary, based on error
 
-  trimmed_data <- timestamp_corrector(trimmed_data,
-                                       file,
-                                      "data")
+  # trimmed_data <- timestamp_corrector(trimmed_data,
+  #                                      file,
+  #                                     "data")
 
     #remove first time point - it is not a full unit of time
 
   trimmed_data <- trimmed_data |>
     duckplyr::slice(-1) |>
     #remove summary columns
-    duckplyr::select(-tidyselect::ends_with("TIMESTAMP"),-tidyselect::ends_with("SAMPLES")) |>
+    duckplyr::select(-tidyselect::ends_with("TIMESTAMP"),
+                     -tidyselect::ends_with("SAMPLES")) |>
     #order data by calculating TimeElapsed
     duckplyr::mutate(TimeElapsed = relativeTime / 3600 - TimeZero) |>
     duckplyr::select(-relativeTime) |>
@@ -157,13 +159,13 @@ load_event_file <- function(event_file, separator, decimal){
   }
 
   else{
-    eventfile_trimmed <- timestamp_corrector(event_data,
-                                           event_file,
-                                           "event")
+    # eventfile_trimmed <- timestamp_corrector(event_data,
+    #                                        event_file,
+    #                                        "event")
 
   #filter so all we have is INSERTED (which is where events end)
 
-  eventfile_trimmed <- eventfile_trimmed |>
+  eventfile_trimmed <- event_data |>
     duckplyr::filter(event == "INSERTED") |>
     #create unique ID for join
     duckplyr::mutate(

@@ -5,7 +5,7 @@ account: cbmr-rmpp
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 9271573
-bundleId: 9291160
+bundleId: 9317610
 url: https://cbmr-rmpp.shinyapps.io/UrinatoR/
 asMultiple: FALSE
 asStatic: FALSE
