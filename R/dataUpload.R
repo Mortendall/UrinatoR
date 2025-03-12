@@ -7,11 +7,11 @@ uploadUI <- function(id){
                   shiny::tagList(
                     bslib::card(bslib::card_title("Step 1A: Upload a DVC data file or load demo data"),
                   shiny::selectInput(inputId = ns("seperator"),
-                                     label = "Select seperator in CSV",
+                                     label = "Select CSV separator used in the data file",
                                      choices = c(",", ";"),
                                      selected = ";"),
                   shiny::selectInput(inputId = ns("decimal"),
-                                     label = "Select regional decimal mark",
+                                     label = "Select the decimal mark used in the data file",
                                      choices = c(",", "."),
                                      selected = "."),
                   shiny::fileInput(inputId = ns("fileUpload"),
@@ -77,7 +77,7 @@ upload <- function(id, data, parentSession){
 
       #####Load demo data####
       shiny::observeEvent(input$demodata,{
-        file_content <- readRDS(here::here("Data/2024-10-29_urinatordata.rds"))
+        file_content <- readRDS(here::here("Data/2025-03-12_urinatordata.rds"))
 
         data$joinedData <- file_content$joinedData
         data$circadiandatagroup <- file_content$circadiandatagroup
@@ -100,11 +100,11 @@ upload <- function(id, data, parentSession){
         shiny::tagList(
 
           shiny::selectInput(inputId = ns("eventSeparator"),
-                             label = "Select separator for event file",
+                             label = "Select CSV separator used in the event file",
                              choices =  c(",", ";"),
                              selected = ";"),
           shiny::selectInput(inputId = ns("eventDecimal"),
-                             label = "Select regional decimal mark",
+                             label = "Select the decimal mark used in the event file",
                              choices = c(",", "."),
                              selected = "."),
           shiny::fileInput(inputId = ns("eventUpload"),
@@ -115,7 +115,7 @@ upload <- function(id, data, parentSession){
                               label = "set a range in minutes for how many data points around events that will be excluded",
                               value = 20),
           shiny::numericInput(inputId = ns("datares"),
-                              label = "Resolution of data",
+                              label = "Resolution of data (in minutes per timepoint)",
                               value = 10),
           shiny::uiOutput(outputId = ns("processbutton"))
           )
@@ -224,6 +224,12 @@ upload <- function(id, data, parentSession){
         ) |>
           dplyr::filter(!is.na(Group)) |>
           dplyr::arrange(TimeElapsed)
+
+        #filter out double entries
+        data$joinedData <- data$joinedData |>
+          duckplyr::mutate(unique_ID = paste(TimeElapsed, ID)) |>
+          duckplyr::distinct(unique_ID, .keep_all = T) |>
+          duckplyr::select(-unique_ID)
 
 
 

@@ -89,7 +89,8 @@ download <-function(id, data, parentSession){
                tidyr::pivot_wider(names_from = ID,
                                   values_from = Rawdata,
                                   values_fill = NA) |>
-              duckplyr::left_join(event_export, by = c("TimeElapsed"="TimeElapsed"))
+              duckplyr::left_join(event_export, by = c("TimeElapsed"="TimeElapsed"),
+                                  suffix  =c(".Value", ".Inserted"))
 
 
             urinatordata$Cumulative <- data_export  |>
@@ -97,14 +98,16 @@ download <-function(id, data, parentSession){
                tidyr::pivot_wider(names_from = ID,
                                   values_from = CumulativeNormalized,
                                   values_fill = NA )|>
-              duckplyr::left_join(event_export, by = c("TimeElapsed"="TimeElapsed"))
+              duckplyr::left_join(event_export, by = c("TimeElapsed"="TimeElapsed"),
+                                  suffix  =c(".Value", ".Inserted"))
 
             urinatordata$Incremental <-  data_export  |>
               dplyr::select(ID, day, hour, minute, TIMESTAMP, TimeElapsed, NormalizedValue)|>
                tidyr::pivot_wider(names_from = ID,
                                   values_from = NormalizedValue,
                                   values_fill = NA) |>
-               duckplyr::left_join(event_export, by = c("TimeElapsed"="TimeElapsed"))
+               duckplyr::left_join(event_export, by = c("TimeElapsed"="TimeElapsed"),
+                                   suffix  =c(".Value", ".Inserted"))
 
             circadian1 <- data$circadiandata |>
               dplyr::select(ID, ZT, meanNormalizedcircadian) |>

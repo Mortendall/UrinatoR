@@ -170,8 +170,14 @@ load_event_file <- function(event_file, separator, decimal){
     #create unique ID for join
     duckplyr::mutate(
       ID = paste(group, cage, sep = "_"),
-      duration = lubridate::days(day)+lubridate::hours(hour)+lubridate::minutes(minute)
-    )
+      duration = lubridate::days(day)+lubridate::hours(hour)+lubridate::minutes(minute),
+        #sometimes multiple events will be recorded in quick succession. This will be interpreted as multiple data points for finding averages.
+        #Check for the presence of these events.
+      unique_ID = paste(ID, duration)
+    ) |>
+    duckplyr::distinct(unique_ID,
+                       .keep_all = TRUE) |>
+    duckplyr::select(-unique_ID)
 
   eventfile_trimmed_split <- eventfile_trimmed |>
     dplyr::group_by(ID) |>

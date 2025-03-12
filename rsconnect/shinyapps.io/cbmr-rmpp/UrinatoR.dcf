@@ -5,8 +5,8 @@ account: cbmr-rmpp
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 9271573
-bundleId: 9317610
+bundleId: 9931657
 url: https://cbmr-rmpp.shinyapps.io/UrinatoR/
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: Data/average.csv|Data/events.csv|Data/pointsfordiscussions.txt|Data/testingground.R|doc/functiontest.qmd|doc/test.rds|doc/vibeke_trimmed_data.csv|doc/vibeke_trimmed_events.csv
+ignoredFiles: doc/functiontest.qmd|doc/test.rds|doc/vibeke_trimmed_data.csv|doc/vibeke_trimmed_events.csv|.Supportfiles
