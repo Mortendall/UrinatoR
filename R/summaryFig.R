@@ -44,7 +44,7 @@ summary <- function(id, data, parentSession){
                             mode = "lines"
             ) |>
               plotly::layout(title = "Bedding Status Index",
-                             yaxis = list(title = "Raw DVC Signal"),
+                             yaxis = list(title = "BSI"),
                              xaxis = list(title = "Elapsed Time (days)"))
           })
 
@@ -58,8 +58,8 @@ summary <- function(id, data, parentSession){
                             type = "scatter",
                             mode = "lines"
             ) |>
-              plotly::layout(title = "Cumulative Urination pr. mouse",
-                             yaxis = list(title = "Accumulated Signal"),
+              plotly::layout(title = "Urination Index (UI)",
+                             yaxis = list(title = "UI / mouse"),
                              xaxis = list(title = "Elapsed Time (days)"))
           })
 
@@ -74,7 +74,7 @@ summary <- function(id, data, parentSession){
                             mode = "lines"
             ) |>
               plotly::layout(title = "Incremental Change w. Bedding Change Removed",
-                             yaxis = list(title = "Incremental Signal pr. mouse"),
+                             yaxis = list(title = "ΔBSI / timepoint"),
                              xaxis = list(title = "Elapsed Time (days)"))
           })
 
@@ -95,7 +95,7 @@ summary <- function(id, data, parentSession){
                             #                thickness = 0.1)
             ) |>
               plotly::layout(title = "Bedding Status Index",
-                             yaxis = list(title = "Raw DVC Signal"),
+                             yaxis = list(title = "BSI"),
                              xaxis = list(title = "Elapsed Time (days)"))
           })
 
@@ -109,8 +109,8 @@ summary <- function(id, data, parentSession){
                             type = "scatter",
                             mode = "lines"
             ) |>
-              plotly::layout(title = "Average Cumulative Urination pr. Mouse",
-                             yaxis = list(title = "Accumulated Signal"),
+              plotly::layout(title = "Average Urination Index (UI)",
+                             yaxis = list(title = "UI / mouse"),
                              xaxis = list(title = "Elapsed Time (days)"))
           })
 
@@ -129,7 +129,7 @@ summary <- function(id, data, parentSession){
                             #                 thickness = 0.1)
             ) |>
               plotly::layout(title = "Incremental Change w. Bedding Change Removed",
-                             yaxis = list(title = "Incremental Signal"),
+                             yaxis = list(title = "ΔBSI / timepoint"),
                              xaxis = list(title = "Elapsed Time (hours)"))
           })
 

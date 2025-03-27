@@ -6,7 +6,7 @@ uploadUI <- function(id){
     shiny::column(12,
                   shiny::tagList(
                     bslib::card(bslib::card_title("Step 1A: Upload a DVC data file or load demo data"),
-                  shiny::selectInput(inputId = ns("seperator"),
+                  shiny::selectInput(inputId = ns("separator"),
                                      label = "Select CSV separator used in the data file",
                                      choices = c(",", ";"),
                                      selected = ";"),
