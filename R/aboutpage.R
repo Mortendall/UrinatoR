@@ -52,8 +52,13 @@ aboutui <- function(id){
                       ),
                       bslib::accordion_panel(
                         title = "Version notes",
-                        shiny::h5("current version: 1.0.0"),
+                        shiny::h5("current version: 1.0.1"),
                         shiny::tagList(
+                          "March 28th 2025 ",
+                          tags$br(),
+                          "Added features: ",
+                          tags$br(),
+                          "- Added custom color selection and graph customization ,and added data load safeguards"),
                           "March 12th 2025 ",
                           tags$br(),
                           "Added features: ",

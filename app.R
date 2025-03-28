@@ -46,12 +46,13 @@ ui <-
 
 server <-function(input, output, session){
   dataSheet <- shiny::reactiveValues()
+  colorscheme <- shiny::reactiveValues()
   parentSession <- session
   welcome("welcome",dataSheet, parentSession)
-  upload("upload",dataSheet, parentSession)
-  preprocessing("preprocess", dataSheet, parentSession)
-  summary("summary", dataSheet, parentSession)
-  circadian("circadian",dataSheet,parentSession)
+  upload("upload",dataSheet, colorscheme, parentSession)
+  preprocessing("preprocess", dataSheet, colorscheme, parentSession)
+  summary("summary", dataSheet, colorscheme, parentSession)
+  circadian("circadian",dataSheet, colorscheme, parentSession)
   download("download", dataSheet, parentSession)
   about("about",dataSheet, parentSession)
 }

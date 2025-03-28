@@ -40,7 +40,7 @@ uploadUI <- function(id){
                         )
 }
 
-upload <- function(id, data, parentSession){
+upload <- function(id, data,colorpalette, parentSession){
   shiny::moduleServer(
     id,
     function(input, output, session){
@@ -53,13 +53,31 @@ upload <- function(id, data, parentSession){
             data$rawData <- load_data_file(input$fileUpload,
                                            input$separator,
                                            input$decimal)
-            data$groups <- extract_group_info(data$rawData)
-            data$trimmedData <- process_data(data$rawData,
-                                             input$fileUpload,
-                                             data$groups)
-            #prepare group data
-            data$groupinfo <- data.frame("CageID"= names(data$trimmedData),
-                                         "No.ofAnimals" = 1)
+            if(ncol(data$rawData)==1){
+              shinyWidgets::sendSweetAlert(
+                title = "Error in reading",
+                text = "Only one column detected. Did you select the right separator?",
+                type = "error"
+              )
+            }
+            else if("event"%in% colnames(data$rawData)){
+              shinyWidgets::sendSweetAlert(
+                title = "Error in reading",
+                text = "Event data found in data. Did you upload an event file?",
+                type = "error"
+              )
+
+            }
+            else{
+              data$groups <- extract_group_info(data$rawData)
+              data$trimmedData <- process_data(data$rawData,
+                                               input$fileUpload,
+                                               data$groups)
+              #prepare group data
+              data$groupinfo <- data.frame("CageID"= names(data$trimmedData),
+                                           "No.ofAnimals" = 1)
+            }
+
          }
          )
       output$Table<-  shiny::renderUI({
@@ -89,6 +107,7 @@ upload <- function(id, data, parentSession){
         data$hourly <- file_content$hourly
         data$rawData <- file_content$rawData
         data$trimmedData <- file_content$trimmedData
+        colorpalette <- initial_color_picker(data)
         shiny::updateTabsetPanel(session = parentSession,
                                  inputId = "inTabset",
                                  selected = "summaryFig")

@@ -391,3 +391,18 @@ exclude_cage_changes <- function(joined_data,
   )
 
 }
+
+#' initial color picker
+#'
+#' @param dataset a urinatoR RDS object
+#' @param grouped bolean - is data by group?
+#'
+#' @return a color palette of the correct length
+
+initial_color_picker <- function(dataset){
+    color_palette_group <- viridisLite::turbo(length(dataset$groups))
+    color_palette_individual <- viridisLite::turbo(length(dataset$groupinfo$CageID))
+    color_palette <- list(group =color_palette_group,
+                          individual = color_palette_individual)
+  return(color_palette)
+}
