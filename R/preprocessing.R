@@ -22,7 +22,7 @@ preprocessingUI <- function(id){
                   )))
 }
 
-preprocessing <- function(id, data, parentSession){
+preprocessing <- function(id, data, colorpalette, parentSession){
   shiny::moduleServer(
     id,
     function( input, output, session){
@@ -202,6 +202,8 @@ preprocessing <- function(id, data, parentSession){
               dplyr::arrange(ZT)
 
 
+            #pick colors for plotting
+            colorpalette <- initial_color_picker(data)
 
 
 
