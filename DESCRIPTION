@@ -1,12 +1,18 @@
 Package: UrinatoR
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Title: Extracting mouse urination data from DVC recordings
+Version: 1.0.1
+Authors@R: c(
+    person("Morten", "Dall", role = "cre",
+           comment = c(ORCID = "0000-0002-8577-3162"))
+  )
+Description: Urinator allows visualizations of cage humidity data acquired 
+through Techniplast's Digital Ventilated Cage system. It is based on the 
+assumption that humidity will normally arise from urination. As increased 
+urination is a symptom if diabetes, large increases in cage humidity suggests
+hyperglycemia and diabetes. The program takes 1. a  recording file and 2. 
+an event file in csv format, and generates individual- and grouped data, 
+allowing users to identify cages containing animals with diabetes. 
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.2
