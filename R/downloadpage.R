@@ -45,7 +45,7 @@ download <-function(id, data, parentSession){
           timestamp <- data$rawData |>
             duckplyr::slice(-1) |>
             #remove summary columns
-            #THIS IS WHERE WE START
+
             duckplyr::select(duckplyr::first(tidyselect::ends_with("TIMESTAMP")),
                              relativeTime,
                              day,
@@ -94,7 +94,7 @@ download <-function(id, data, parentSession){
 
 
             urinatordata$Cumulative <- data_export  |>
-              dplyr::select(ID, day, hour, minute, TimeElapsed, CumulativeNormalized)|>
+              dplyr::select(ID, day, hour, minute, TIMESTAMP, TimeElapsed, CumulativeNormalized)|>
                tidyr::pivot_wider(names_from = ID,
                                   values_from = CumulativeNormalized,
                                   values_fill = NA )|>
@@ -139,7 +139,7 @@ download <-function(id, data, parentSession){
 
             #raw data
             urinatordata$Rawdata <- data_export |>
-              dplyr::select(day, hour, minute,Group,  TimeElapsed, meanRawdata) |>
+              dplyr::select(day, hour, minute, TIMESTAMP, Group,  TimeElapsed, meanRawdata) |>
               duckplyr::mutate(Group = paste(Group, "_Mean")) |>
               tidyr::pivot_wider(names_from = Group,
                                  values_from = meanRawdata)
@@ -154,7 +154,7 @@ download <-function(id, data, parentSession){
 
             #Cumulative data
             urinatordata$Cumulative <- data_export |>
-              dplyr::select(Group,  TimeElapsed, meanCumulativeNorm) |>
+              dplyr::select(Group, day, hour, minute, TIMESTAMP,  TimeElapsed, meanCumulativeNorm) |>
               duckplyr::mutate(Group = paste(Group, "_Mean")) |>
               tidyr::pivot_wider(names_from = Group,
                                  values_from = meanCumulativeNorm)
@@ -169,7 +169,7 @@ download <-function(id, data, parentSession){
 
             #Incremental
             urinatordata$Incremental <-  data_export|>
-              dplyr::select(Group, TimeElapsed, meanNormalized) |>
+              dplyr::select(Group, day, hour, minute, TIMESTAMP, TimeElapsed, meanNormalized) |>
               duckplyr::mutate(Group = paste(Group, "_Mean")) |>
               tidyr::pivot_wider(names_from = Group,
                                  values_from = meanNormalized)

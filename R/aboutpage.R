@@ -58,12 +58,13 @@ aboutui <- function(id){
                           tags$br(),
                           "Added features: ",
                           tags$br(),
-                          "- Added custom color selection and graph customization ,and added data load safeguards"),
+                          "- Added custom color selection and graph customization ,and added data load safeguards",
+                          tags$br(),
+                          "- Fixed errors in download excel function and layout for circadian graph"),
                         tags$br(),
                         "March 12th 2025 ",
                           tags$br(),
                           "- Added function that removes events within the same time window to prevent double entries")
-
                   )
                   ),
     shiny::column(12)

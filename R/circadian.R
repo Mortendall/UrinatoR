@@ -77,7 +77,7 @@ circadian <- function(id, data,colorpalette, parentSession){
                                   x1 = 23,
                                   xref  = "x",
                                   y0 = 0,
-                                  y1 = max(data$circadiandatagroup$meanNormalizedGroup),
+                                  y1 = max(data$circadiandata$meanNormalizedcircadian),
                                   yref = "y")
                            ))
         })
